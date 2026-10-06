@@ -10,6 +10,14 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     seed_on_startup: bool = True
 
+    # Auth / session
+    session_secret: str = "dev-insecure-secret-change-me"
+    session_cookie_name: str = "sf_session"
+    session_max_age_seconds: int = 60 * 60 * 24 * 30  # 30 days
+    cookie_secure: bool = False
+    cookie_samesite: str = "lax"
+    google_client_id: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

@@ -4,10 +4,9 @@ import { Heart } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/lib/cn";
-import { useDemoUser } from "@/hooks/useDemoUser";
+import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/hooks/useFavorites";
 import type { ListingCard } from "@/types";
-import { toast } from "sonner";
 
 export function FavoriteButton({
   listing,
@@ -17,20 +16,18 @@ export function FavoriteButton({
   variant?: "overlay" | "plain";
 }) {
   const { isFavorited, toggle } = useFavorites();
-  const { currentUserId } = useDemoUser();
+  const { requireAuth } = useAuth();
   const [animating, setAnimating] = useState(false);
   const active = isFavorited(listing.id);
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!currentUserId) {
-      toast.error("Select a demo user to save listings.");
-      return;
-    }
-    setAnimating(true);
-    void toggle(listing);
-    window.setTimeout(() => setAnimating(false), 250);
+    requireAuth(() => {
+      setAnimating(true);
+      void toggle(listing);
+      window.setTimeout(() => setAnimating(false), 250);
+    });
   };
 
   return (

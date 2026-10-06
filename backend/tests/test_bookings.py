@@ -5,7 +5,7 @@ def _book(client, seeded, user_id, ci, co, guests=2):
     return client.post(
         "/api/bookings",
         json={"listing_id": seeded["listing"], "check_in": iso(ci), "check_out": iso(co), "guests": guests},
-        headers=auth(user_id),
+        cookies=auth(user_id),
     )
 
 
@@ -17,7 +17,7 @@ def test_valid_booking_succeeds_and_persists(client, seeded):
     assert body["night_count"] == 3
     assert len(body["confirmation_code"]) == 8
 
-    trips = client.get("/api/trips", headers=auth(seeded["guest"])).json()
+    trips = client.get("/api/trips", cookies=auth(seeded["guest"])).json()
     assert len(trips) == 1
     assert trips[0]["confirmation_code"] == body["confirmation_code"]
 
@@ -89,7 +89,7 @@ def test_nonexistent_listing_rejected(client, seeded):
     res = client.post(
         "/api/bookings",
         json={"listing_id": 999999, "check_in": iso(10), "check_out": iso(12), "guests": 1},
-        headers=auth(seeded["guest"]),
+        cookies=auth(seeded["guest"]),
     )
     assert res.status_code == 404
 
@@ -106,14 +106,14 @@ def test_cancelled_booking_frees_availability(client, seeded):
     created = _book(client, seeded, seeded["guest"], 10, 13).json()
     # Blocked while confirmed.
     assert _book(client, seeded, seeded["guest"], 10, 13).status_code == 409
-    client.post(f"/api/bookings/{created['id']}/cancel", headers=auth(seeded["guest"]))
+    client.post(f"/api/bookings/{created['id']}/cancel", cookies=auth(seeded["guest"]))
     # Freed after cancellation.
     assert _book(client, seeded, seeded["guest"], 10, 13).status_code == 201
 
 
 def test_cannot_cancel_another_users_booking(client, seeded):
     created = _book(client, seeded, seeded["guest"], 10, 13).json()
-    res = client.post(f"/api/bookings/{created['id']}/cancel", headers=auth(seeded["host_b"]))
+    res = client.post(f"/api/bookings/{created['id']}/cancel", cookies=auth(seeded["host_b"]))
     assert res.status_code == 403
 
 

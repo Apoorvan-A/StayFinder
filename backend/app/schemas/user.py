@@ -10,3 +10,10 @@ class UserPublic(BaseModel):
     role: str
     is_superhost: bool = False
     bio: str | None = None
+
+
+class AccountUser(UserPublic):
+    """The authenticated user's own profile — includes private fields like email."""
+
+    email: str
+    provider: str

@@ -7,11 +7,11 @@ import useSWR from "swr";
 import { StarRating } from "@/components/StarRating";
 import { formatPrice } from "@/lib/format";
 import { fetcher } from "@/lib/api";
-import { useDemoUser } from "@/hooks/useDemoUser";
+import { useAuth } from "@/hooks/useAuth";
 import type { HostMetrics, HostReservation, ListingDetail } from "@/types";
 
 export function HostDashboard() {
-  const { currentUser } = useDemoUser();
+  const { user: currentUser } = useAuth();
   const { data: metrics } = useSWR<HostMetrics>("/api/host/metrics", fetcher);
   const { data: listings } = useSWR<ListingDetail[]>("/api/host/listings", fetcher);
   const { data: reservations } = useSWR<HostReservation[]>("/api/host/reservations", fetcher);

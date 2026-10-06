@@ -28,6 +28,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
     role: Mapped[str] = mapped_column(String(20), default=UserRole.GUEST, nullable=False)
+
+    # External identity (Google) or "demo" for the built-in demo identities.
+    provider: Mapped[str] = mapped_column(String(20), default="demo", nullable=False)
+    provider_subject_id: Mapped[str | None] = mapped_column(String(255), unique=True)
     is_superhost: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Marks the curated identities shown in the mocked-auth demo switcher.
     is_demo_switchable: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

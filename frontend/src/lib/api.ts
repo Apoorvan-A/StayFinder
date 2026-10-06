@@ -1,7 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const DEMO_USER_KEY = "stayfinder.demoUserId";
-
 export class ApiError extends Error {
   code: string;
   status: number;
@@ -13,30 +11,7 @@ export class ApiError extends Error {
   }
 }
 
-export function getStoredUserId(): number | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(DEMO_USER_KEY);
-    return raw ? Number(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function setStoredUserId(id: number): void {
-  try {
-    window.localStorage.setItem(DEMO_USER_KEY, String(id));
-  } catch {
-    /* storage may be unavailable (private mode); ignore */
-  }
-}
-
-function buildHeaders(extra?: HeadersInit): HeadersInit {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const userId = getStoredUserId();
-  if (userId) headers["X-Demo-User-Id"] = String(userId);
-  return { ...headers, ...(extra as Record<string, string>) };
-}
+const JSON_HEADERS: HeadersInit = { "Content-Type": "application/json" };
 
 async function handle<T>(res: Response): Promise<T> {
   if (res.ok) {
@@ -58,7 +33,8 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { headers: buildHeaders(), cache: "no-store" });
+  // credentials: "include" sends the HttpOnly session cookie cross-origin.
+  const res = await fetch(`${API_URL}${path}`, { credentials: "include", cache: "no-store" });
   return handle<T>(res);
 }
 
@@ -69,7 +45,8 @@ export async function apiSend<T>(
 ): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method,
-    headers: buildHeaders(),
+    headers: JSON_HEADERS,
+    credentials: "include",
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return handle<T>(res);
@@ -77,5 +54,15 @@ export async function apiSend<T>(
 
 // SWR fetcher
 export const fetcher = <T>(path: string): Promise<T> => apiGet<T>(path);
+
+/** Fetcher for the current session that resolves to null when unauthenticated. */
+export async function fetchMeOrNull<T>(path: string): Promise<T | null> {
+  try {
+    return await apiGet<T>(path);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) return null;
+    throw err;
+  }
+}
 
 export { API_URL };

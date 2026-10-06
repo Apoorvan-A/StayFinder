@@ -26,7 +26,7 @@ def test_create_listing(client, seeded):
     res = client.post(
         "/api/host/listings",
         json=_new_listing_payload(amenity_ids=[seeded["wifi"]]),
-        headers=auth(seeded["host_b"]),
+        cookies=auth(seeded["host_b"]),
     )
     assert res.status_code == 201
     body = res.json()
@@ -34,7 +34,7 @@ def test_create_listing(client, seeded):
     assert len(body["images"]) == 2
     assert {a["id"] for a in body["amenities"]} == {seeded["wifi"]}
 
-    owned = client.get("/api/host/listings", headers=auth(seeded["host_b"])).json()
+    owned = client.get("/api/host/listings", cookies=auth(seeded["host_b"])).json()
     assert any(listing["title"] == "Brand New Loft" for listing in owned)
 
 
@@ -42,7 +42,7 @@ def test_update_listing_changes_persist(client, seeded):
     client.patch(
         f"/api/host/listings/{seeded['listing']}",
         json={"nightly_price_cents": 25000, "image_urls": ["https://example.com/x.jpg"]},
-        headers=auth(seeded["host_a"]),
+        cookies=auth(seeded["host_a"]),
     )
     detail = client.get(f"/api/listings/{seeded['listing']}").json()
     assert detail["nightly_price_cents"] == 25000
@@ -50,7 +50,7 @@ def test_update_listing_changes_persist(client, seeded):
 
 
 def test_delete_listing_removes_it(client, seeded):
-    res = client.delete(f"/api/host/listings/{seeded['listing']}", headers=auth(seeded["host_a"]))
+    res = client.delete(f"/api/host/listings/{seeded['listing']}", cookies=auth(seeded["host_a"]))
     assert res.status_code == 200
     assert client.get(f"/api/listings/{seeded['listing']}").status_code == 404
 
@@ -60,10 +60,10 @@ def test_delete_listing_with_bookings_leaves_no_orphans(client, seeded):
     booking = client.post(
         "/api/bookings",
         json={"listing_id": seeded["listing"], "check_in": iso(10), "check_out": iso(12), "guests": 1},
-        headers=auth(seeded["guest"]),
+        cookies=auth(seeded["guest"]),
     ).json()
-    client.delete(f"/api/host/listings/{seeded['listing']}", headers=auth(seeded["host_a"]))
-    trips = client.get("/api/trips", headers=auth(seeded["guest"])).json()
+    client.delete(f"/api/host/listings/{seeded['listing']}", cookies=auth(seeded["host_a"]))
+    trips = client.get("/api/trips", cookies=auth(seeded["guest"])).json()
     assert all(t["id"] != booking["id"] for t in trips)
 
 
@@ -71,9 +71,9 @@ def test_host_metrics_from_real_data(client, seeded):
     client.post(
         "/api/bookings",
         json={"listing_id": seeded["listing"], "check_in": iso(20), "check_out": iso(23), "guests": 2},
-        headers=auth(seeded["guest"]),
+        cookies=auth(seeded["guest"]),
     )
-    metrics = client.get("/api/host/metrics", headers=auth(seeded["host_a"])).json()
+    metrics = client.get("/api/host/metrics", cookies=auth(seeded["host_a"])).json()
     assert metrics["active_listings"] == 1
     assert metrics["total_reservations"] == 1
     assert metrics["upcoming_reservations"] == 1

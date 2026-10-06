@@ -52,8 +52,8 @@ def test_detail_404(client, seeded):
 
 def test_favorited_flag_reflects_user(client, seeded):
     lid = seeded["listing"]
-    client.post(f"/api/favorites/{lid}", headers=auth(seeded["guest"]))
-    res = client.get("/api/listings", headers=auth(seeded["guest"]))
+    client.post(f"/api/favorites/{lid}", cookies=auth(seeded["guest"]))
+    res = client.get("/api/listings", cookies=auth(seeded["guest"]))
     assert res.json()["items"][0]["is_favorited"] is True
     # Anonymous request never reports favorited.
     assert client.get("/api/listings").json()["items"][0]["is_favorited"] is False

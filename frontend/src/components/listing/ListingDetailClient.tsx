@@ -1,7 +1,6 @@
 "use client";
 
 import { Share } from "lucide-react";
-import { useEffect } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
@@ -18,17 +17,12 @@ import {
 } from "@/components/listing/ListingSections";
 import { ReservationWidget } from "@/components/listing/ReservationWidget";
 import { ApiError, fetcher } from "@/lib/api";
-import { addRecentlyViewed } from "@/lib/recentlyViewed";
 import type { Availability, ListingDetail } from "@/types";
 import { DetailSkeleton } from "@/components/listing/DetailSkeleton";
 
 export function ListingDetailClient({ id }: { id: number }) {
   const { data: listing, error } = useSWR<ListingDetail>(`/api/listings/${id}`, fetcher);
   const { data: availability } = useSWR<Availability>(`/api/listings/${id}/availability`, fetcher);
-
-  useEffect(() => {
-    if (listing) addRecentlyViewed(listing.id);
-  }, [listing]);
 
   if (error) {
     const notFound = error instanceof ApiError && error.status === 404;

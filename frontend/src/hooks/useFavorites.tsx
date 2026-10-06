@@ -6,7 +6,7 @@ import useSWR from "swr";
 
 import { apiSend, fetcher } from "@/lib/api";
 import type { ListingCard } from "@/types";
-import { useDemoUser } from "@/hooks/useDemoUser";
+import { useAuth } from "@/hooks/useAuth";
 
 interface FavoritesContextValue {
   favoriteIds: Set<number>;
@@ -19,8 +19,8 @@ interface FavoritesContextValue {
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const { currentUserId } = useDemoUser();
-  const key = currentUserId ? "/api/favorites" : null;
+  const { user } = useAuth();
+  const key = user ? "/api/favorites" : null;
   const { data, mutate, isLoading } = useSWR<ListingCard[]>(key, fetcher);
 
   const favorites = data ?? [];

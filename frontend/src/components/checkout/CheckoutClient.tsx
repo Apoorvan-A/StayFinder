@@ -12,13 +12,13 @@ import { StarRating } from "@/components/StarRating";
 import { Container } from "@/components/ui/Container";
 import { ApiError, apiSend, fetcher } from "@/lib/api";
 import { formatDateRange, formatPrice } from "@/lib/format";
-import { useDemoUser } from "@/hooks/useDemoUser";
+import { useAuth } from "@/hooks/useAuth";
 import type { Booking, ListingDetail, PriceQuote } from "@/types";
 
 export function CheckoutClient() {
   const params = useSearchParams();
   const router = useRouter();
-  const { currentUser } = useDemoUser();
+  const { user, isLoading: authLoading, openAuthModal } = useAuth();
 
   const listingId = Number(params.get("listing_id"));
   const checkIn = params.get("check_in") ?? "";
@@ -57,6 +57,18 @@ export function CheckoutClient() {
     );
   }
 
+  if (!authLoading && !user) {
+    return (
+      <Container className="py-16 text-center">
+        <h1 className="text-2xl font-semibold">Sign in to complete your booking</h1>
+        <p className="mt-2 text-ink-muted">Your dates are saved — just sign in to confirm.</p>
+        <button type="button" onClick={openAuthModal} className="btn-primary mt-6">
+          Log in or sign up
+        </button>
+      </Container>
+    );
+  }
+
   const confirm = async () => {
     setSubmitting(true);
     try {
@@ -86,7 +98,7 @@ export function CheckoutClient() {
   }
 
   return (
-    <Container className="py-6">
+    <Container className="max-w-[1032px] py-6">
       <button
         type="button"
         onClick={() => router.back()}
@@ -94,25 +106,26 @@ export function CheckoutClient() {
       >
         <ChevronLeft className="h-4 w-4" /> Back
       </button>
-      <h1 className="mb-8 text-3xl font-semibold">Confirm and pay</h1>
+      <h1 className="mb-8 text-[26px] font-semibold">Confirm and pay</h1>
 
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_400px]">
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_360px]">
         <div className="space-y-8">
           <section>
             <h2 className="mb-4 text-xl font-semibold">Your trip</h2>
             <dl className="space-y-3">
               <Row label="Dates" value={formatDateRange(checkIn, checkOut)} />
               <Row label="Guests" value={`${guests} ${guests === 1 ? "guest" : "guests"}`} />
-              <Row label="Booking as" value={currentUser?.name ?? "—"} />
+              <Row label="Booking as" value={user?.name ?? "—"} />
             </dl>
           </section>
 
           <div className="h-px bg-divider" />
 
           <section>
-            <h2 className="mb-1 text-xl font-semibold">Pay with</h2>
-            <p className="mb-4 flex items-center gap-2 text-sm text-ink-muted">
-              <Lock className="h-4 w-4" /> This is a mock checkout — please don&apos;t enter real card details.
+            <h2 className="mb-3 text-xl font-semibold">Pay with</h2>
+            <p className="mb-4 flex items-start gap-2 rounded-xl bg-brand-tint px-4 py-3 text-sm text-ink">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-brand-dark" />
+              <span>This is a demo checkout. No payment is processed — please don&apos;t enter real card details.</span>
             </p>
             <MockPaymentForm />
           </section>

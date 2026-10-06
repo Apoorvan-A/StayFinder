@@ -10,6 +10,7 @@ import { StarRating } from "@/components/StarRating";
 import { Modal } from "@/components/ui/Modal";
 import { apiSend } from "@/lib/api";
 import { formatPrice, formatDateRange, toISODate } from "@/lib/format";
+import { useAuth } from "@/hooks/useAuth";
 import type { BookedRange, ListingDetail, PriceQuote } from "@/types";
 
 export function ReservationWidget({
@@ -20,6 +21,7 @@ export function ReservationWidget({
   bookedRanges: BookedRange[];
 }) {
   const router = useRouter();
+  const { requireAuth } = useAuth();
   const [range, setRange] = useState<DateRange | undefined>();
   const [guests, setGuests] = useState(1);
   const [quote, setQuote] = useState<PriceQuote | null>(null);
@@ -63,7 +65,8 @@ export function ReservationWidget({
       check_out: toISODate(range.to),
       guests: String(guests),
     });
-    router.push(`/checkout?${params.toString()}`);
+    // Anonymous users are prompted to sign in, then land on checkout with dates preserved.
+    requireAuth(() => router.push(`/checkout?${params.toString()}`));
   };
 
   const unavailable = quote ? !quote.available : false;

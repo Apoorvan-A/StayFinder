@@ -3,15 +3,17 @@
 import { Toaster } from "sonner";
 import { SWRConfig } from "swr";
 
-import { DemoUserProvider } from "@/hooks/useDemoUser";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { AuthProvider } from "@/hooks/useAuth";
 import { FavoritesProvider } from "@/hooks/useFavorites";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SWRConfig value={{ revalidateOnFocus: false, shouldRetryOnError: false }}>
-      <DemoUserProvider>
+      <AuthProvider>
         <FavoritesProvider>
           {children}
+          <AuthModal />
           <Toaster
             position="top-center"
             toastOptions={{
@@ -19,7 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             }}
           />
         </FavoritesProvider>
-      </DemoUserProvider>
+      </AuthProvider>
     </SWRConfig>
   );
 }

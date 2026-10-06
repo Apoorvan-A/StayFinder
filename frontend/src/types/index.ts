@@ -9,6 +9,11 @@ export interface User {
   bio: string | null;
 }
 
+export interface AccountUser extends User {
+  email: string;
+  provider: string;
+}
+
 export interface ListingImage {
   id: number;
   url: string;

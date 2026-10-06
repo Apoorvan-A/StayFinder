@@ -85,7 +85,11 @@ def seeded(db_session):
 
 
 def auth(user_id: int) -> dict:
-    return {"X-Demo-User-Id": str(user_id)}
+    """Return a session cookie for the given user, mirroring a logged-in request."""
+    from app.config import get_settings
+    from app.services.auth_service import create_session_token
+
+    return {get_settings().session_cookie_name: create_session_token(user_id)}
 
 
 def iso(days_from_today: int) -> str:

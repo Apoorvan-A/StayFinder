@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 
-import { DemoUserSwitcher } from "@/components/DemoUserSwitcher";
+import { AccountMenu } from "@/components/AccountMenu";
 import { Logo } from "@/components/Logo";
 import { SearchBar } from "@/components/search/SearchBar";
 import { Container } from "@/components/ui/Container";
@@ -16,7 +16,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-divider bg-white">
-      <Container>
+      <Container size="wide">
         <div className="flex h-16 items-center justify-between gap-4 md:h-20">
           <div className="flex-shrink-0">
             <Logo />
@@ -37,7 +37,7 @@ export function Navbar() {
             >
               Become a host
             </Link>
-            <DemoUserSwitcher />
+            <AccountMenu />
           </div>
         </div>
 

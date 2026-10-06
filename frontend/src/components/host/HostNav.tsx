@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/cn";
-import { useDemoUser } from "@/hooks/useDemoUser";
+import { useAuth } from "@/hooks/useAuth";
 
 const TABS = [
   { href: "/host", label: "Dashboard", exact: true },
@@ -14,7 +14,7 @@ const TABS = [
 
 export function HostNav() {
   const pathname = usePathname();
-  const { currentUser } = useDemoUser();
+  const { user: currentUser } = useAuth();
 
   return (
     <div className="border-b border-divider">
