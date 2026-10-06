@@ -1,0 +1,24 @@
+# Render blueprint for the StayFinder backend.
+# SQLite lives on a persistent disk so bookings survive restarts/redeploys.
+services:
+  - type: web
+    name: stayfinder-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: DATABASE_URL
+        value: sqlite:////var/data/app.db
+      - key: SEED_ON_STARTUP
+        value: "1"
+      - key: CORS_ORIGINS
+        # Replace with your deployed frontend origin (comma-separated for multiple).
+        value: https://stayfinder.vercel.app
+    disk:
+      name: stayfinder-data
+      mountPath: /var/data
+      sizeGB: 1

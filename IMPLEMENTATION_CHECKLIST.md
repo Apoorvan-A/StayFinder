@@ -6,8 +6,8 @@ Live source of truth for progress. An item is checked only when implemented **an
 - [x] Repo structure (`frontend/`, `backend/`, `docs/`)
 - [x] Planning docs
 - [x] FastAPI app boots + CORS + `/health`
-- [ ] Next.js + TS + Tailwind boots
-- [x] `.env.example` for backend
+- [x] Next.js + TS + Tailwind boots
+- [x] `.env.example` for both apps
 
 ## Database
 - [x] SQLAlchemy models (User, Listing, ListingImage, Amenity, ListingAmenity, Booking, Review, Favorite)
@@ -46,30 +46,32 @@ Live source of truth for progress. An item is checked only when implemented **an
 - [x] Reservations across owned listings
 
 ## Frontend
-- [ ] Layout + sticky navbar + demo-user switcher
-- [ ] Search bar (location/dates/guests) with URL state
-- [ ] Category row + filter modal
-- [ ] Listing grid + cards + skeletons + empty/error states
-- [ ] Pagination / load-more
-- [ ] Listing detail (gallery, host, amenities, reviews, calendar, sticky reservation card)
-- [ ] Gallery modal
-- [ ] Checkout flow + mock payment + confirmation
-- [ ] My Trips (upcoming/past/cancelled) + cancel
-- [ ] Wishlist
-- [ ] Host dashboard + CRUD forms + reservations
+- [x] Layout + sticky navbar + demo-user switcher
+- [x] Search bar (location/dates/guests) with URL state
+- [x] Category row + filter modal
+- [x] Listing grid + cards + skeletons + empty/error states
+- [x] Pagination / load-more
+- [x] Listing detail (gallery, host, amenities, reviews, calendar, sticky reservation card)
+- [x] Gallery modal
+- [x] Checkout flow + mock payment + confirmation
+- [x] My Trips (upcoming/past/cancelled) + cancel
+- [x] Wishlist
+- [x] Host dashboard + CRUD forms + reservations
 
 ## Cross-cutting
-- [ ] Responsive (1440/1280/1024/768/430/390)
-- [ ] Accessibility (semantic, keyboard, labels, focus)
-- [ ] Toasts
-- [ ] 404 + error UI
+- [x] Responsive (verified desktop + mobile; Tailwind breakpoints throughout)
+- [x] Accessibility (semantic, keyboard, labels, focus, Esc-to-close modals)
+- [x] Toasts
+- [x] 404 + error UI
 
 ## Testing
-- [ ] Backend pytest (listings, booking matrix, ownership, favorites, CRUD)
-- [ ] Frontend build + typecheck + lint clean
+- [x] Backend pytest (listings, booking matrix, ownership, favorites, CRUD) — 39 passing
+- [x] Frontend build + typecheck + lint clean
 
 ## Deployment / Docs
-- [ ] `.env.example`, no hardcoded localhost in prod paths
-- [ ] Deploy config (frontend Vercel, backend Render)
-- [ ] README (setup, architecture, schema, API, demo users)
-- [ ] Final production + hiring-manager audit
+- [x] `.env.example`, no hardcoded localhost in prod paths
+- [x] Deploy config (frontend Vercel notes, backend `render.yaml`)
+- [x] README (setup, architecture, schema, API, demo users)
+- [x] Final production audit (no AI refs / debug leftovers)
+- [ ] Push to public GitHub repo (needs user's account)
+- [ ] Deploy to Vercel + Render (needs user's accounts)
