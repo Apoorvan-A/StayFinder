@@ -29,21 +29,27 @@ Pick a demo identity from the avatar menu (top-right): **Alex Morgan** (guest),
 - Expandable search (destination · dates · guests) with shareable URL state
 - Category row + a full filter sheet (price, property type, rooms, amenities, rating)
 - Pagination via "show more"
-- Listing detail: hero gallery + photo modal, amenities, reviews, map, host info
+- Listing detail: hero gallery + photo modal, amenities, **Meet your host**,
+  **Where you'll be** (approximate area only), reviews, and **Things to know** (house rules,
+  safety, cancellation policy)
 - Sticky reservation card with a **server-computed** price breakdown and a date picker that
   blocks unavailable nights
 - End-to-end booking → mock checkout → confirmation code
-- My Trips (upcoming / past / cancelled) with cancellation that frees the dates
+- My Trips → **reservation details** with full price breakdown, exact address and a **Get
+  directions** link (Google Maps) once confirmed, plus cancellation
 - Wishlist with optimistic favoriting that persists per user
+- **In-app messaging** with hosts (persisted conversations, unread counts)
 
 **Host**
 - Dashboard with metrics computed from real data (listings, reservations, revenue, rating)
 - Full listing CRUD (photos, pricing, capacity, amenities) with validation
-- Reservations across all owned listings
+- Reservations across all owned listings, each opening a detail view
+- In-app messaging with guests
 - Ownership enforced server-side — a host can only mutate their own listings
 
 **Cross-cutting:** responsive (mobile → desktop), toasts, skeletons, empty/error states,
-accessible modals and controls, graceful 404.
+accessible modals and controls, graceful 404. **Location privacy:** the public listing shows
+only the general area; the exact address is revealed only on a confirmed reservation.
 
 ---
 
@@ -55,7 +61,8 @@ accessible modals and controls, graceful 404.
 | Backend   | FastAPI, SQLAlchemy 2.0 (typed), Pydantic v2, Uvicorn |
 | Database  | SQLite |
 | Auth      | Google Identity Services + HttpOnly signed session cookie (google-auth, itsdangerous) |
-| Testing   | pytest (50 backend tests) |
+| Maps      | Embedded OpenStreetMap (approximate area) + Google Maps external directions link |
+| Testing   | pytest (63 backend tests) |
 
 Money is stored and computed as **integer cents** end to end. Authentication uses **Google
 sign-in** with an **HttpOnly signed session cookie**; the backend derives identity from the
@@ -136,8 +143,9 @@ REST under `/api`, interactive docs at `/docs`. Errors use a consistent
 | GET | `/api/listings/{id}/reviews` | Reviews + aggregate |
 | POST | `/api/bookings/quote` | Server-side price quote + availability |
 | POST | `/api/bookings` | Create booking (atomic, 409 on conflict) |
-| GET | `/api/trips` | Current user's bookings |
-| POST | `/api/bookings/{id}/cancel` | Cancel own booking |
+| GET | `/api/trips` · `/api/bookings/{id}` | Current user's bookings · reservation detail (exact address when confirmed) |
+| POST | `/api/bookings/{id}/cancel` | Cancel own booking (before check-in) |
+| GET/POST | `/api/conversations...` | In-app messaging (participant-only) |
 | GET/POST/DELETE | `/api/favorites...` | Wishlist |
 | GET | `/api/host/metrics` | Host dashboard metrics |
 | GET/POST/PATCH/DELETE | `/api/host/listings...` | Listing CRUD (ownership enforced) |
@@ -257,7 +265,7 @@ Never commit the client id or any secret.
 ## Tests
 
 ```bash
-cd backend && pytest        # 50 tests: booking matrix, ownership, favorites, host CRUD, auth
+cd backend && pytest        # 63 tests: booking matrix, ownership, favorites, host CRUD, auth, messaging
 cd frontend && npm run build && npm run lint   # type-safe production build + lint
 ```
 
@@ -265,6 +273,37 @@ The booking suite covers overlap/adjacency, surrounding/inside ranges, zero-nigh
 dates, capacity, server-side pricing, and cancellation freeing availability. Auth tests cover
 first-login provisioning, returning-user reuse, session enforcement, tampered cookies, and the
 guest→host transition (Google verification is mocked — no live Google calls).
+
+---
+
+## Scalability & production evolution
+
+The current submission keeps the system intentionally simple while drawing clean boundaries
+that could evolve without a rewrite.
+
+**Already in place**
+- **Server-side pagination** (`page` / `page_size`, bounded at 48) — the browser never loads
+  the whole marketplace.
+- **Server-side filtering & search** — location, dates, price, type, rooms, amenities, rating
+  and sort are all SQL, built in `listing_service`.
+- **Indexes** matched to real access patterns (listing city/price/type/category, booking
+  `listing_id+status`/guest, review `listing_id`, favorite uniqueness, conversation
+  guest/host, message `conversation_id+created_at`).
+- **N+1 avoidance** via intentional `selectinload` on list/detail/host/messaging queries.
+- **Stateless API** — all durable state is in the database; identity comes from a signed
+  cookie, so instances are horizontally scalable.
+- **Request-scoped DB sessions** with explicit transactions around domain mutations.
+- **Image optimization** via `next/image` with per-breakpoint `sizes`.
+
+**Natural next steps for real production scale** (not implemented here)
+- PostgreSQL in place of SQLite; object storage + CDN for images.
+- Redis/SQS-backed workers for *non-critical* async work (e.g. notification emails).
+- Horizontally scaled stateless API instances behind a load balancer, with caching and
+  tracing/observability.
+
+Critically, **booking correctness stays synchronous and transactional** — availability
+re-checks and price calculation happen inside the booking transaction and would not be moved
+to a queue.
 
 ---
 

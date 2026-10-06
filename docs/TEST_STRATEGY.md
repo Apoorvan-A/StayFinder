@@ -34,6 +34,14 @@ first Google login provisions a user and returning login reuses it (Google verif
 mocked); invalid/tampered tokens and cookies are rejected; guest→host promotion; a booking is
 attributed to the session user, not the request body.
 
+**Messaging**: guest starts a thread and it persists; host sees it and replies; the guest sees
+the reply; an unrelated user is denied read/write (403); anonymous is rejected (401); a host
+can't message their own listing; invalid listing → 404; reopening reuses the same thread.
+
+**Reservation detail & privacy**: the public listing omits the exact address; a confirmed
+reservation reveals it to the guest and the listing's host only; an unrelated user is denied;
+a cancelled reservation hides the address again.
+
 ## Frontend
 - `next build` + `tsc --noEmit` + `eslint` must pass clean.
 - Manual critical-flow verification in a real browser (search → book → trip; favorite; host CRUD).

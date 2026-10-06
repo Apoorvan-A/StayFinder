@@ -14,6 +14,10 @@ frontend sends requests with `credentials: "include"`.
 `LISTING_NOT_FOUND` (404) · `BOOKING_CONFLICT` (409) · `VALIDATION_ERROR` (422) ·
 `FORBIDDEN` (403) · `UNAUTHORIZED` (401) · `NOT_FOUND` (404) · `DUPLICATE_FAVORITE` (409).
 
+**Location privacy:** the public `GET /api/listings/{id}` never includes the exact address —
+only the city/country and an area description. The exact address appears only in a confirmed
+reservation's detail (`GET /api/bookings/{id}`) and in the owner's host listing endpoint.
+
 ## Endpoints
 
 ### System
@@ -39,8 +43,21 @@ frontend sends requests with `credentials: "include"`.
 ### Bookings
 - `POST /api/bookings/quote` — `{ listing_id, check_in, check_out, guests }` → server price breakdown + availability check (no persistence)
 - `POST /api/bookings` — create (atomic, re-checks conflict → 409), returns confirmation
-- `GET /api/trips` — current user's bookings grouped/with status
-- `POST /api/bookings/{id}/cancel` — owner-only; frees dates
+- `GET /api/trips` — current user's bookings with listing
+- `GET /api/bookings/{id}` — reservation detail for a participant (guest or the listing's host);
+  exact address + coordinates included only when the reservation is `confirmed`
+- `POST /api/bookings/{id}/cancel` — guest-only; allowed up to the check-in date; frees dates
+- `POST /api/bookings/{id}/message` — get-or-create the booking's conversation and post a message
+
+### Messaging (participant-only)
+- `GET /api/conversations` — current user's threads (counterparty, last message, unread count)
+- `POST /api/conversations` — `{ listing_id, body }` start/reuse a thread as a guest
+- `GET /api/conversations/{id}` — thread + messages (marks counterparty messages read)
+- `POST /api/conversations/{id}/messages` — reply
+
+### Listings (metadata)
+- `GET /api/listings/price-range` — dataset min/max nightly price for the filter
+- `GET /api/host/listings/{id}` — owner-only detail including the private exact address (for editing)
 
 ### Favorites
 - `GET /api/favorites` — current user's wishlist (full listing cards)

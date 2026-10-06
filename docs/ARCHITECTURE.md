@@ -48,6 +48,17 @@ The backend derives the user from the session cookie, recomputes price and re-ch
 inside the booking transaction, and enforces ownership on all host/guest mutations regardless
 of anything supplied in the request body.
 
+## External integrations
+- **Google OAuth** — ID-token sign-in (verified server-side).
+- **Google Maps** — an external *directions* link (`maps/dir/?...`) on confirmed reservations;
+  no API key and no exact location on the public listing.
+- **OpenStreetMap** — an embedded, deliberately approximate area map on the public listing.
+
+## Messaging
+Persisted in-app messaging (`conversations` + `messages`) between a guest and a host about a
+listing. No real-time infrastructure — threads are fetched and posted over plain REST, and the
+backend authorizes every read/write to the thread's two participants.
+
 ## Deployment
 - Frontend → Vercel (`NEXT_PUBLIC_API_URL` → backend).
 - Backend → Render (persistent disk for the SQLite file; seeded on first boot).

@@ -21,6 +21,15 @@ availability model is the core correctness concern.
   `confirmation_code` unique.
 - **reviews** — `rating` (1–5, CHECK), `comment`, author, optional `booking_id`.
 - **favorites** — composite unique `(user_id, listing_id)`; no duplicate wishlisting.
+- **conversations** — a message thread between a `guest_id` and `host_id` about one
+  `listing_id`; unique `(listing_id, guest_id)` so there is one thread per guest per listing.
+- **messages** — belong to a conversation, with `sender_id`, `body`, `is_read`, `created_at`.
+
+Additional fields added for the product: **users** carry optional host-profile data
+(`host_since_year`, `response_rate`, `response_time`, `languages`) and the external-identity
+fields (`provider`, `provider_subject_id`). **listings** carry `check_in_time`,
+`check_out_time` and an `area_description` (the general-area blurb shown publicly), while the
+exact `address` is never exposed on the public listing.
 
 ## Money
 All monetary values are **integer cents**. Formatting to currency happens only at the edge.
@@ -44,8 +53,9 @@ is rejected. Only **availability-holding statuses** (`confirmed`, `pending`) blo
 - CHECK: `review.rating BETWEEN 1 AND 5`, `booking.check_out > booking.check_in`,
   `guest_count >= 1`, non-negative money.
 - Indexes: `listings(city)`, `listings(nightly_price_cents)`, `listings(property_type)`,
-  `bookings(listing_id, status)`, `bookings(guest_id)`, `reviews(listing_id)`,
-  `favorites(user_id)`.
+  `listings(category)`, `bookings(listing_id, status)`, `bookings(guest_id)`,
+  `reviews(listing_id)`, `favorites(user_id)`, `conversations(guest_id)`,
+  `conversations(host_id)`, `messages(conversation_id, created_at)`.
 
 ## ER diagram
 ```mermaid
