@@ -139,7 +139,28 @@ def cancel_booking(db: Session, *, booking_id: int, user_id: int) -> Booking:
         raise ForbiddenError("You can only cancel your own bookings.")
     if booking.status == BookingStatus.CANCELLED:
         return booking
+    # StayFinder's cancellation policy: free cancellation up until the check-in date.
+    if booking.check_in <= date.today():
+        raise ValidationError("This reservation can no longer be cancelled (check-in has passed).")
     booking.status = BookingStatus.CANCELLED
     db.commit()
     db.refresh(booking)
+    return booking
+
+
+def get_trip_detail(db: Session, *, booking_id: int, user_id: int) -> Booking:
+    """A booking's full details, for the guest who booked it or the host of its listing."""
+    booking = db.scalar(
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .options(
+            selectinload(Booking.listing).selectinload(Listing.images),
+            selectinload(Booking.listing).selectinload(Listing.host),
+            selectinload(Booking.guest),
+        )
+    )
+    if booking is None:
+        raise NotFoundError("Reservation not found.")
+    if booking.guest_id != user_id and booking.listing.host_id != user_id:
+        raise ForbiddenError("You don't have access to this reservation.")
     return booking

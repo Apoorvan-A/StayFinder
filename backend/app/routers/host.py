@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from app.deps import CurrentUser, DbSession
 from app.schemas.booking import HostReservationOut
 from app.schemas.common import MessageResponse
-from app.schemas.listing import ListingCreate, ListingDetail, ListingUpdate
-from app.serializers import to_card, to_detail
+from app.schemas.listing import HostListingDetail, ListingCreate, ListingUpdate
+from app.serializers import to_card, to_host_detail
 from app.services import host_service
 
 router = APIRouter(prefix="/host", tags=["host"])
@@ -24,26 +24,32 @@ def metrics(db: DbSession, user: CurrentUser) -> HostMetrics:
     return HostMetrics(**host_service.host_metrics(db, user.id))
 
 
-@router.get("/listings", response_model=list[ListingDetail])
-def list_listings(db: DbSession, user: CurrentUser) -> list[ListingDetail]:
+@router.get("/listings", response_model=list[HostListingDetail])
+def list_listings(db: DbSession, user: CurrentUser) -> list[HostListingDetail]:
     listings = host_service.list_host_listings(db, user.id)
-    return [to_detail(listing, set()) for listing in listings]
+    return [to_host_detail(listing) for listing in listings]
 
 
-@router.post("/listings", response_model=ListingDetail, status_code=201)
-def create_listing(payload: ListingCreate, db: DbSession, user: CurrentUser) -> ListingDetail:
+@router.get("/listings/{listing_id}", response_model=HostListingDetail)
+def get_listing(listing_id: int, db: DbSession, user: CurrentUser) -> HostListingDetail:
+    listing = host_service.get_owned_listing(db, listing_id=listing_id, host_id=user.id)
+    return to_host_detail(listing)
+
+
+@router.post("/listings", response_model=HostListingDetail, status_code=201)
+def create_listing(payload: ListingCreate, db: DbSession, user: CurrentUser) -> HostListingDetail:
     listing = host_service.create_listing(db, host_id=user.id, data=payload)
-    return to_detail(listing, set())
+    return to_host_detail(listing)
 
 
-@router.patch("/listings/{listing_id}", response_model=ListingDetail)
+@router.patch("/listings/{listing_id}", response_model=HostListingDetail)
 def update_listing(
     listing_id: int, payload: ListingUpdate, db: DbSession, user: CurrentUser
-) -> ListingDetail:
+) -> HostListingDetail:
     listing = host_service.update_listing(
         db, listing_id=listing_id, host_id=user.id, data=payload
     )
-    return to_detail(listing, set())
+    return to_host_detail(listing)
 
 
 @router.delete("/listings/{listing_id}", response_model=MessageResponse)

@@ -1,7 +1,8 @@
 from datetime import date
 
 from fastapi import APIRouter, Query
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import func, select
 
 from app.deps import DbSession, OptionalUser
 from app.models import Amenity, Listing
@@ -25,6 +26,20 @@ def categories(db: DbSession) -> list[str]:
 @router.get("/amenities", response_model=list[AmenityOut])
 def amenities(db: DbSession) -> list[Amenity]:
     return list(db.scalars(select(Amenity).order_by(Amenity.category, Amenity.name)).all())
+
+
+class PriceRange(BaseModel):
+    min_cents: int
+    max_cents: int
+
+
+@router.get("/listings/price-range", response_model=PriceRange)
+def price_range(db: DbSession) -> PriceRange:
+    """Dataset-derived nightly price bounds, used to seed the price filter."""
+    low, high = db.execute(
+        select(func.min(Listing.nightly_price_cents), func.max(Listing.nightly_price_cents))
+    ).one()
+    return PriceRange(min_cents=int(low or 0), max_cents=int(high or 0))
 
 
 @router.get("/listings", response_model=Page[ListingCard])

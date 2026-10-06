@@ -49,11 +49,21 @@ class ListingCard(BaseModel):
 
 class ListingDetail(ListingCard):
     description: str
-    address: str | None = None
+    # Exact address is intentionally omitted from the public listing — it is only
+    # revealed on a confirmed reservation. We expose the general area instead.
+    area_description: str
     bathrooms: float
     cleaning_fee_cents: int
+    check_in_time: str
+    check_out_time: str
     host: UserPublic
     amenities: list[AmenityOut] = Field(default_factory=list)
+
+
+class HostListingDetail(ListingDetail):
+    """Host-facing view of their own listing — includes the private exact address."""
+
+    address: str | None = None
 
 
 class ListingCreate(BaseModel):

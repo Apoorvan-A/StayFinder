@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -33,9 +33,15 @@ class User(Base):
     provider: Mapped[str] = mapped_column(String(20), default="demo", nullable=False)
     provider_subject_id: Mapped[str | None] = mapped_column(String(255), unique=True)
     is_superhost: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # Marks the curated identities shown in the mocked-auth demo switcher.
+    # Marks the curated identities offered as instant demo logins.
     is_demo_switchable: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     bio: Mapped[str | None] = mapped_column(String(1000))
+
+    # Host profile details ("Meet your host"). Nullable — guests don't have them.
+    host_since_year: Mapped[int | None] = mapped_column(Integer)
+    response_rate: Mapped[int | None] = mapped_column(Integer)
+    response_time: Mapped[str | None] = mapped_column(String(60))
+    languages: Mapped[str | None] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )

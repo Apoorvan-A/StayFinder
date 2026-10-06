@@ -78,6 +78,10 @@ class Listing(Base):
     property_type: Mapped[str] = mapped_column(String(60), default="Apartment", nullable=False)
     category: Mapped[str] = mapped_column(String(60), default="Trending", nullable=False)
 
+    check_in_time: Mapped[str] = mapped_column(String(20), default="3:00 PM", nullable=False)
+    check_out_time: Mapped[str] = mapped_column(String(20), default="11:00 AM", nullable=False)
+    area_description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
     # Derived aggregates, recomputed from reviews.
     rating: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     review_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

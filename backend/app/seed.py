@@ -17,9 +17,11 @@ from app.models import (
     Amenity,
     Booking,
     BookingStatus,
+    Conversation,
     Favorite,
     Listing,
     ListingImage,
+    Message,
     Review,
     User,
     UserRole,
@@ -173,6 +175,37 @@ REVIEWER_NAMES = [
     "Isabella", "Lucas", "Mia", "Arjun", "Priya", "Chen", "Yuki", "Fatima",
 ]
 
+STREET_NAMES = [
+    "Marina Way", "Cliffside Road", "Orchard Lane", "Harbor View", "Sunset Boulevard",
+    "Juniper Street", "Maple Court", "Seaside Terrace", "Vineyard Path", "Birchwood Drive",
+    "Lantern Alley", "Coral Crescent", "Old Mill Road", "Garden Close", "Pine Hollow",
+]
+
+AREA_DESCRIPTIONS = [
+    "A quiet, walkable pocket of the area — independent cafes, bakeries and a weekend market "
+    "are a few minutes away, with the main sights an easy stroll or short ride from the door.",
+    "Set just back from the busier streets, the neighborhood stays peaceful in the evenings "
+    "while keeping restaurants, shops and transit within comfortable reach.",
+    "A relaxed, leafy residential street with a genuine local feel — close enough to the action, "
+    "far enough to properly unwind.",
+    "Tucked into a scenic stretch that locals love, with standout views, nearby trails or "
+    "waterfront, and a handful of great places to eat close by.",
+]
+
+HOST_LANGUAGES = [
+    "English", "English, Spanish", "English, French", "English, Mandarin",
+    "English, Portuguese", "English, German, Italian",
+]
+RESPONSE_TIMES = ["within an hour", "within a few hours", "within a day"]
+
+# (name, is_superhost, bio) for additional hosts so no single host owns the marketplace.
+EXTRA_HOST_SPECS = [
+    ("Mara Lindqvist", True, "Designing calm, light-filled homes in the north."),
+    ("Diego Herrera", False, "Weekend host sharing a couple of favorite city stays."),
+    ("Aisha Khan", True, "Hospitality runs in the family — you're very welcome."),
+    ("Tomás Rocha", False, "Coastal cottages and slow mornings by the water."),
+]
+
 
 def _avatar(seed: str) -> str:
     return f"https://i.pravatar.cc/200?u={seed}"
@@ -185,7 +218,7 @@ def _photos_for(index: int) -> list[str]:
 
 
 def _clear_all(db: Session) -> None:
-    for model in (Favorite, Review, Booking, ListingImage, Listing, Amenity, User):
+    for model in (Message, Conversation, Favorite, Review, Booking, ListingImage, Listing, Amenity, User):
         db.query(model).delete()
     db.commit()
 
@@ -215,6 +248,10 @@ def seed(db: Session) -> None:
         is_superhost=True,
         is_demo_switchable=True,
         bio="Superhost sharing sunny homes across the Mediterranean.",
+        host_since_year=2017,
+        response_rate=100,
+        response_time="within an hour",
+        languages="English, Spanish, Portuguese",
     )
     host_daniel = User(
         name="Daniel Kim",
@@ -224,8 +261,29 @@ def seed(db: Session) -> None:
         is_superhost=True,
         is_demo_switchable=True,
         bio="Designing calm, considered spaces for travelers.",
+        host_since_year=2019,
+        response_rate=98,
+        response_time="within a few hours",
+        languages="English, Mandarin",
     )
-    db.add_all([guest, host_sofia, host_daniel])
+
+    extra_hosts = [
+        User(
+            name=name,
+            email=f"host.{name.split()[0].lower()}@stayfinder.demo",
+            avatar_url=_avatar(name),
+            role=UserRole.HOST,
+            is_superhost=is_super,
+            bio=bio,
+            host_since_year=random.randint(2015, 2023),
+            response_rate=random.randint(86, 100),
+            response_time=random.choice(RESPONSE_TIMES),
+            languages=random.choice(HOST_LANGUAGES),
+        )
+        for (name, is_super, bio) in EXTRA_HOST_SPECS
+    ]
+
+    db.add_all([guest, host_sofia, host_daniel, *extra_hosts])
 
     # --- Reviewer users ---
     reviewers = [
@@ -240,7 +298,9 @@ def seed(db: Session) -> None:
     db.add_all(reviewers)
     db.flush()
 
-    hosts = [host_sofia, host_daniel]
+    # Sofia and Daniel (demo hosts) lead the rotation so they showcase ~6 listings each;
+    # the rest spread across the other hosts so no single host owns the marketplace.
+    hosts = [host_sofia, host_daniel, *extra_hosts]
 
     # --- Listings ---
     listings: list[Listing] = []
@@ -254,7 +314,8 @@ def seed(db: Session) -> None:
             description=random.choice(DESCRIPTIONS),
             city=city,
             country=country,
-            address=f"{city}, {country}",
+            address=f"{random.randint(2, 240)} {random.choice(STREET_NAMES)}, {city}, {country}",
+            area_description=random.choice(AREA_DESCRIPTIONS),
             latitude=lat,
             longitude=lng,
             nightly_price_cents=price * 100,
@@ -265,7 +326,8 @@ def seed(db: Session) -> None:
             bathrooms=baths,
             property_type=ptype,
             category=category,
-            is_guest_favorite=(index % 3 == 0),
+            check_in_time=random.choice(["2:00 PM", "3:00 PM", "4:00 PM"]),
+            check_out_time=random.choice(["10:00 AM", "11:00 AM", "12:00 PM"]),
         )
         for order, url in enumerate(_photos_for(index)):
             listing.images.append(ListingImage(url=url, sort_order=order, alt_text=title))
@@ -298,14 +360,29 @@ def seed(db: Session) -> None:
 
     db.commit()
 
-    # Recompute denormalized rating/review_count from seeded reviews.
+    # Recompute denormalized rating/review_count from reviews.
     for listing in listings:
         recompute_aggregates(db, listing.id)
+        db.refresh(listing)
+
+    # Award "Guest favorite" selectively — the top well-reviewed listings only, so the
+    # badge is meaningful rather than decorative (roughly the top quarter).
+    eligible = sorted(
+        (lst for lst in listings if lst.review_count >= 5),
+        key=lambda lst: (lst.rating, lst.review_count),
+        reverse=True,
+    )
+    favorite_ids = {lst.id for lst in eligible[:8]}
+    for listing in listings:
+        listing.is_guest_favorite = listing.id in favorite_ids
+    db.commit()
 
     # --- Favorites for the primary guest ---
     for listing in listings[:4]:
         db.add(Favorite(user_id=guest.id, listing_id=listing.id))
     db.commit()
+
+    _seed_conversations(db, listings, guest)
 
 
 def _days_ago(n: int):
@@ -374,6 +451,41 @@ def _seed_bookings(
         check_in=today + timedelta(days=60), check_out=today + timedelta(days=63),
         guests=2, status=BookingStatus.CANCELLED,
     )
+
+
+def _seed_conversations(db: Session, listings: list[Listing], guest: User) -> None:
+    from datetime import datetime, timezone
+
+    threads = [
+        (
+            listings[0],
+            [
+                (guest.id, "Hi! We're hoping to arrive a little early — would an 11am check-in be possible?"),
+                (listings[0].host_id, "Hi Alex! I can usually arrange early check-in if the place is ready. I'll confirm the day before — looking forward to hosting you!"),
+                (guest.id, "Amazing, thank you so much."),
+            ],
+        ),
+        (
+            listings[1],
+            [
+                (guest.id, "Is it quiet in the evenings? It's partly a work trip so I'll need to focus a little."),
+                (listings[1].host_id, "Very quiet, and there's a proper desk by the window with great light. You'll be comfortable."),
+            ],
+        ),
+    ]
+    base = datetime.now(timezone.utc) - timedelta(days=3)
+    for listing, msgs in threads:
+        conv = Conversation(
+            listing_id=listing.id, guest_id=guest.id, host_id=listing.host_id, created_at=base
+        )
+        db.add(conv)
+        db.flush()
+        for i, (sender_id, body) in enumerate(msgs):
+            conv.messages.append(
+                Message(sender_id=sender_id, body=body, created_at=base + timedelta(hours=i * 6))
+            )
+        conv.updated_at = base + timedelta(hours=len(msgs) * 6)
+    db.commit()
 
 
 def seed_if_empty(db: Session) -> None:

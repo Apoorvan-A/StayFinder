@@ -60,6 +60,7 @@ def seeded(db_session):
         description="A lovely place.",
         city="Lisbon",
         country="Portugal",
+        address="12 Marina Way, Lisbon, Portugal",
         nightly_price_cents=20000,
         cleaning_fee_cents=5000,
         max_guests=4,

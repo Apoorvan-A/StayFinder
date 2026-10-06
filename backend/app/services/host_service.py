@@ -19,6 +19,10 @@ def _owned_or_403(db: Session, *, listing_id: int, host_id: int) -> Listing:
     return listing
 
 
+def get_owned_listing(db: Session, *, listing_id: int, host_id: int) -> Listing:
+    return _owned_or_403(db, listing_id=listing_id, host_id=host_id)
+
+
 def list_host_listings(db: Session, host_id: int) -> list[Listing]:
     stmt = (
         select(Listing)

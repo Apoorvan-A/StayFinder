@@ -67,3 +67,17 @@ class TripOut(BookingOut):
 class HostReservationOut(BookingOut):
     listing: ListingCard
     guest: UserPublic
+
+
+class TripDetail(BookingOut):
+    """Full reservation details for a participant (guest or host of the booking)."""
+
+    listing: ListingCard
+    host: UserPublic
+    guest: UserPublic
+    viewer_role: str  # "guest" or "host"
+    nights: int
+    # Exact address + map coordinates are only populated for confirmed reservations.
+    exact_address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None

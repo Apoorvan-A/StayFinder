@@ -10,6 +10,10 @@ class UserPublic(BaseModel):
     role: str
     is_superhost: bool = False
     bio: str | None = None
+    host_since_year: int | None = None
+    response_rate: int | None = None
+    response_time: str | None = None
+    languages: str | None = None
 
 
 class AccountUser(UserPublic):

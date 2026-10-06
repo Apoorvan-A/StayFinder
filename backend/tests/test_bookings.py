@@ -117,6 +117,38 @@ def test_cannot_cancel_another_users_booking(client, seeded):
     assert res.status_code == 403
 
 
+def test_public_listing_hides_exact_address(client, seeded):
+    detail = client.get(f"/api/listings/{seeded['listing']}").json()
+    assert "address" not in detail
+    assert "area_description" in detail
+
+
+def test_confirmed_reservation_reveals_address_to_guest(client, seeded):
+    booking = _book(client, seeded, seeded["guest"], 10, 13).json()
+    detail = client.get(f"/api/bookings/{booking['id']}", cookies=auth(seeded["guest"])).json()
+    assert detail["exact_address"] is not None
+    assert detail["viewer_role"] == "guest"
+    assert detail["nights"] == 3
+
+
+def test_reservation_detail_denied_to_unrelated_user(client, seeded):
+    booking = _book(client, seeded, seeded["guest"], 10, 13).json()
+    assert client.get(f"/api/bookings/{booking['id']}", cookies=auth(seeded["host_b"])).status_code == 403
+
+
+def test_host_sees_their_listing_reservation(client, seeded):
+    booking = _book(client, seeded, seeded["guest"], 10, 13).json()
+    detail = client.get(f"/api/bookings/{booking['id']}", cookies=auth(seeded["host_a"])).json()
+    assert detail["viewer_role"] == "host"
+
+
+def test_cancelled_reservation_hides_address(client, seeded):
+    booking = _book(client, seeded, seeded["guest"], 10, 13).json()
+    client.post(f"/api/bookings/{booking['id']}/cancel", cookies=auth(seeded["guest"]))
+    detail = client.get(f"/api/bookings/{booking['id']}", cookies=auth(seeded["guest"])).json()
+    assert detail["exact_address"] is None
+
+
 def test_quote_matches_booking_total(client, seeded):
     quote = client.post(
         "/api/bookings/quote",
