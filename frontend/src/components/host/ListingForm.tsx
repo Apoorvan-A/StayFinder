@@ -9,7 +9,7 @@ import useSWR from "swr";
 import { cn } from "@/lib/cn";
 import { ApiError, apiSend, fetcher } from "@/lib/api";
 import { PROPERTY_TYPES } from "@/lib/constants";
-import type { Amenity, ListingDetail } from "@/types";
+import type { Amenity, HostListingDetail, ListingDetail } from "@/types";
 
 interface FormState {
   title: string;
@@ -29,7 +29,7 @@ interface FormState {
   amenity_ids: number[];
 }
 
-function initialFrom(listing: ListingDetail | null): FormState {
+function initialFrom(listing: HostListingDetail | null): FormState {
   if (!listing) {
     return {
       title: "",
@@ -73,7 +73,7 @@ export function ListingForm({
   listing,
 }: {
   mode: "create" | "edit";
-  listing?: ListingDetail | null;
+  listing?: HostListingDetail | null;
 }) {
   const router = useRouter();
   const { data: amenities } = useSWR<Amenity[]>("/api/amenities", fetcher);

@@ -41,6 +41,10 @@ export function formatShortDate(value: string): string {
   return format(parseISO(value), "MMM d, yyyy");
 }
 
+export function formatMessageTime(value: string): string {
+  return format(parseISO(value), "MMM d · h:mm a");
+}
+
 export function nightsBetween(checkIn: Date, checkOut: Date): number {
   return Math.max(0, differenceInCalendarDays(checkOut, checkIn));
 }

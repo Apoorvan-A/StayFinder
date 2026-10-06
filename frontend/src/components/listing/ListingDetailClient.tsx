@@ -10,10 +10,11 @@ import { Container } from "@/components/ui/Container";
 import { ListingGallery } from "@/components/listing/ListingGallery";
 import {
   AmenitiesSection,
-  HostSection,
-  MapSection,
+  MeetYourHost,
   Overview,
   ReviewsSection,
+  ThingsToKnow,
+  WhereYoullBe,
 } from "@/components/listing/ListingSections";
 import { ReservationWidget } from "@/components/listing/ReservationWidget";
 import { ApiError, fetcher } from "@/lib/api";
@@ -44,6 +45,15 @@ export function ListingDetailClient({ id }: { id: number }) {
 
   const share = async () => {
     const url = window.location.href;
+    // Prefer the native share sheet where available (mobile), else copy the link.
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: listing.title, url });
+        return;
+      } catch {
+        // User dismissed the share sheet, or it failed — fall back to copy.
+      }
+    }
     try {
       await navigator.clipboard.writeText(url);
       toast.success("Link copied to clipboard");
@@ -91,11 +101,13 @@ export function ListingDetailClient({ id }: { id: number }) {
           <div className="h-px bg-divider" />
           <AmenitiesSection amenities={listing.amenities} />
           <div className="h-px bg-divider" />
-          <MapSection listing={listing} />
+          <WhereYoullBe listing={listing} />
           <div className="h-px bg-divider" />
           <ReviewsSection listingId={listing.id} />
           <div className="h-px bg-divider" />
-          <HostSection listing={listing} />
+          <MeetYourHost listing={listing} />
+          <div className="h-px bg-divider" />
+          <ThingsToKnow listing={listing} />
         </div>
 
         <ReservationWidget listing={listing} bookedRanges={availability?.booked_ranges ?? []} />

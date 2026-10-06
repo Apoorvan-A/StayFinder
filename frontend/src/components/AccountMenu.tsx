@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Heart, Home, LayoutDashboard, Luggage, Menu, UserCircle } from "lucide-react";
+import { Compass, Heart, Home, LayoutDashboard, Luggage, Menu, MessageCircle, UserCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -89,6 +89,7 @@ export function AccountMenu() {
               <Divider />
               <Item href="/trips" icon={<Luggage className="h-4 w-4" />} label="Trips" onClick={close} />
               <Item href="/wishlist" icon={<Heart className="h-4 w-4" />} label="Wishlists" onClick={close} />
+              <Item href="/messages" icon={<MessageCircle className="h-4 w-4" />} label="Messages" onClick={close} />
               <Divider />
               {user.role === "host" ? (
                 <Item href="/host" icon={<LayoutDashboard className="h-4 w-4" />} label="Host dashboard" onClick={close} />

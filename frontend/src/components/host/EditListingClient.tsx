@@ -4,10 +4,10 @@ import useSWR from "swr";
 
 import { ListingForm } from "@/components/host/ListingForm";
 import { fetcher } from "@/lib/api";
-import type { ListingDetail } from "@/types";
+import type { HostListingDetail } from "@/types";
 
 export function EditListingClient({ id }: { id: number }) {
-  const { data: listing, error } = useSWR<ListingDetail>(`/api/listings/${id}`, fetcher);
+  const { data: listing, error } = useSWR<HostListingDetail>(`/api/host/listings/${id}`, fetcher);
 
   if (error) {
     return <p className="text-ink-muted">We couldn&apos;t load this listing.</p>;

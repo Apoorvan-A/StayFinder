@@ -7,6 +7,10 @@ export interface User {
   role: Role;
   is_superhost: boolean;
   bio: string | null;
+  host_since_year?: number | null;
+  response_rate?: number | null;
+  response_time?: string | null;
+  languages?: string | null;
 }
 
 export interface AccountUser extends User {
@@ -50,11 +54,17 @@ export interface ListingCard {
 
 export interface ListingDetail extends ListingCard {
   description: string;
-  address: string | null;
+  area_description: string;
   bathrooms: number;
   cleaning_fee_cents: number;
+  check_in_time: string;
+  check_out_time: string;
   host: User;
   amenities: Amenity[];
+}
+
+export interface HostListingDetail extends ListingDetail {
+  address: string | null;
 }
 
 export interface Page<T> {
@@ -117,6 +127,43 @@ export interface Trip extends Booking {
 export interface HostReservation extends Booking {
   listing: ListingCard;
   guest: User;
+}
+
+export interface TripDetail extends Booking {
+  listing: ListingCard;
+  host: User;
+  guest: User;
+  viewer_role: Role;
+  nights: number;
+  exact_address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface Message {
+  id: number;
+  conversation_id: number;
+  sender_id: number;
+  body: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface ConversationSummary {
+  id: number;
+  listing: ListingCard;
+  counterparty: User;
+  last_message: string | null;
+  last_message_at: string;
+  unread_count: number;
+}
+
+export interface ConversationDetail {
+  id: number;
+  listing: ListingCard;
+  counterparty: User;
+  viewer_role: Role;
+  messages: Message[];
 }
 
 export interface HostMetrics {

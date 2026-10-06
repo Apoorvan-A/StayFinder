@@ -2,6 +2,7 @@
 
 import { CalendarCheck } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import useSWR from "swr";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -38,7 +39,11 @@ export function HostReservations() {
       <h1 className="mb-6 text-3xl font-semibold">Reservations</h1>
       <div className="space-y-3">
         {data.map((r) => (
-          <div key={r.id} className="flex items-center gap-4 rounded-2xl border border-divider p-4">
+          <Link
+            key={r.id}
+            href={`/trips/${r.id}`}
+            className="flex items-center gap-4 rounded-2xl border border-divider p-4 transition hover:shadow-soft"
+          >
             <div className="relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-divider">
               {r.listing.images[0] && (
                 <Image src={r.listing.images[0].url} alt={r.listing.title} fill sizes="80px" className="object-cover" />
@@ -64,7 +69,7 @@ export function HostReservations() {
               </span>
               <span className="font-semibold">{formatPrice(r.total_cents)}</span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

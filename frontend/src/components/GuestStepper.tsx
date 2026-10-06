@@ -11,6 +11,7 @@ export function GuestStepper({
   max = 16,
   label = "Guests",
   sublabel,
+  zeroLabel,
 }: {
   value: number;
   onChange: (value: number) => void;
@@ -18,6 +19,8 @@ export function GuestStepper({
   max?: number;
   label?: string;
   sublabel?: string;
+  /** Shown instead of the number when value is 0 (e.g. "Any"). */
+  zeroLabel?: string;
 }) {
   const dec = () => onChange(Math.max(min, value - 1));
   const inc = () => onChange(Math.min(max, value + 1));
@@ -57,7 +60,9 @@ export function GuestStepper({
         <StepButton onClick={dec} disabled={value <= min} ariaLabel="Decrease guests">
           <Minus className="h-4 w-4" />
         </StepButton>
-        <span className="w-6 text-center tabular-nums">{value}</span>
+        <span className="min-w-[2.5rem] text-center tabular-nums">
+          {value === 0 && zeroLabel ? zeroLabel : value}
+        </span>
         <StepButton onClick={inc} disabled={value >= max} ariaLabel="Increase guests">
           <Plus className="h-4 w-4" />
         </StepButton>

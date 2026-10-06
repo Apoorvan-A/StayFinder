@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
 import { GuestStepper } from "@/components/GuestStepper";
@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/cn";
 import { fetcher } from "@/lib/api";
 import { PROPERTY_TYPES } from "@/lib/constants";
+import { formatPrice } from "@/lib/format";
 import type { Amenity } from "@/types";
 
 interface Draft {
@@ -37,16 +38,56 @@ function readDraft(params: URLSearchParams): Draft {
   };
 }
 
+function buildCountQuery(params: URLSearchParams, draft: Draft): string {
+  const api = new URLSearchParams();
+  // Preserve the active search context (location/dates/guests/category/sort).
+  for (const key of ["location", "check_in", "check_out", "guests", "category", "sort"]) {
+    const v = params.get(key);
+    if (v) api.set(key, v);
+  }
+  if (draft.minPrice) api.set("min_price", String(Math.round(Number(draft.minPrice) * 100)));
+  if (draft.maxPrice) api.set("max_price", String(Math.round(Number(draft.maxPrice) * 100)));
+  if (draft.propertyType) api.set("property_type", draft.propertyType);
+  if (draft.bedrooms) api.set("bedrooms", String(draft.bedrooms));
+  if (draft.beds) api.set("beds", String(draft.beds));
+  if (draft.minRating) api.set("min_rating", String(draft.minRating));
+  draft.amenities.forEach((id) => api.append("amenities", String(id)));
+  api.set("page_size", "1");
+  return api.toString();
+}
+
 export function FilterModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const { data: amenities } = useSWR<Amenity[]>("/api/amenities", fetcher);
+  const { data: priceBounds } = useSWR<{ min_cents: number; max_cents: number }>(
+    "/api/listings/price-range",
+    fetcher,
+  );
   const [draft, setDraft] = useState<Draft>(() => readDraft(new URLSearchParams(params.toString())));
 
   useEffect(() => {
     if (open) setDraft(readDraft(new URLSearchParams(params.toString())));
   }, [open, params]);
+
+  // Live count of listings matching the current (unsaved) filter draft.
+  const countQuery = useMemo(
+    () => buildCountQuery(new URLSearchParams(params.toString()), draft),
+    [params, draft],
+  );
+  const { data: countData } = useSWR<{ total: number }>(
+    open ? `/api/listings?${countQuery}` : null,
+    fetcher,
+    { keepPreviousData: true },
+  );
+  const matchCount = countData?.total;
+  const ctaLabel =
+    matchCount == null
+      ? "Show results"
+      : `Show ${matchCount} ${matchCount === 1 ? "place" : "places"}`;
+
+  const dollars = (cents: number) => String(Math.round(cents / 100));
 
   const apply = () => {
     const next = new URLSearchParams(params.toString());
@@ -98,7 +139,7 @@ export function FilterModal({ open, onClose }: { open: boolean; onClose: () => v
             Clear all
           </button>
           <button type="button" className="btn-primary" onClick={apply}>
-            Show results
+            {ctaLabel}
           </button>
         </div>
       }
@@ -106,17 +147,23 @@ export function FilterModal({ open, onClose }: { open: boolean; onClose: () => v
       <div className="space-y-8">
         <section>
           <h3 className="mb-3 text-lg font-semibold">Price range</h3>
-          <p className="mb-3 text-sm text-ink-muted">Nightly price before fees</p>
+          <p className="mb-3 text-sm text-ink-muted">
+            {priceBounds
+              ? `Nightly prices range from ${formatPrice(priceBounds.min_cents)} to ${formatPrice(priceBounds.max_cents)}`
+              : "Nightly price before fees"}
+          </p>
           <div className="flex items-center gap-4">
             <PriceInput
               label="Minimum"
               value={draft.minPrice}
+              placeholder={priceBounds ? dollars(priceBounds.min_cents) : "0"}
               onChange={(v) => setDraft((d) => ({ ...d, minPrice: v }))}
             />
             <span className="mt-6 h-px w-4 bg-hairline" />
             <PriceInput
               label="Maximum"
               value={draft.maxPrice}
+              placeholder={priceBounds ? dollars(priceBounds.max_cents) : "0"}
               onChange={(v) => setDraft((d) => ({ ...d, maxPrice: v }))}
             />
           </div>
@@ -157,6 +204,7 @@ export function FilterModal({ open, onClose }: { open: boolean; onClose: () => v
             value={draft.bedrooms}
             min={0}
             max={10}
+            zeroLabel="Any"
             onChange={(v) => setDraft((d) => ({ ...d, bedrooms: v }))}
           />
           <GuestStepper
@@ -164,6 +212,7 @@ export function FilterModal({ open, onClose }: { open: boolean; onClose: () => v
             value={draft.beds}
             min={0}
             max={16}
+            zeroLabel="Any"
             onChange={(v) => setDraft((d) => ({ ...d, beds: v }))}
           />
         </section>
@@ -223,10 +272,12 @@ function PriceInput({
   label,
   value,
   onChange,
+  placeholder = "0",
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  placeholder?: string;
 }) {
   return (
     <label className="flex-1">
@@ -238,7 +289,7 @@ function PriceInput({
           min={0}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="0"
+          placeholder={placeholder}
           className="w-full bg-transparent px-2 text-sm outline-none"
         />
       </div>

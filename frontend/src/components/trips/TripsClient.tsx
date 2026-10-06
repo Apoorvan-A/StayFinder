@@ -123,10 +123,13 @@ function TripCard({
 }) {
   const image = trip.listing.images[0]?.url;
   return (
-    <div className="flex flex-col gap-4 overflow-hidden rounded-2xl border border-divider sm:flex-row">
-      <Link href={`/listings/${trip.listing.id}`} className="relative h-48 w-full flex-shrink-0 bg-divider sm:h-auto sm:w-64">
+    <Link
+      href={`/trips/${trip.id}`}
+      className="flex flex-col gap-4 overflow-hidden rounded-2xl border border-divider transition hover:shadow-soft sm:flex-row"
+    >
+      <div className="relative h-48 w-full flex-shrink-0 bg-divider sm:h-auto sm:w-64">
         {image && <Image src={image} alt={trip.listing.title} fill sizes="256px" className="object-cover" />}
-      </Link>
+      </div>
       <div className="flex flex-1 flex-col justify-between p-5">
         <div>
           <div className="flex items-start justify-between gap-2">
@@ -134,9 +137,7 @@ function TripCard({
               <p className="text-xs uppercase tracking-wide text-ink-muted">
                 {trip.listing.city}, {trip.listing.country}
               </p>
-              <Link href={`/listings/${trip.listing.id}`} className="text-lg font-semibold hover:underline">
-                {trip.listing.title}
-              </Link>
+              <p className="text-lg font-semibold">{trip.listing.title}</p>
             </div>
             <StatusBadge status={trip.status} />
           </div>
@@ -153,7 +154,11 @@ function TripCard({
           {onCancel && (
             <button
               type="button"
-              onClick={onCancel}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onCancel();
+              }}
               disabled={cancelling}
               className="rounded-lg border border-hairline px-4 py-2 text-sm font-medium transition hover:border-ink disabled:opacity-50"
             >
@@ -162,7 +167,7 @@ function TripCard({
           )}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 

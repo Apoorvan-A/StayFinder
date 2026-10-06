@@ -5,7 +5,7 @@ import Link from "next/link";
 import useSWR from "swr";
 
 import { StarRating } from "@/components/StarRating";
-import { formatPrice } from "@/lib/format";
+import { formatDateRange, formatPrice } from "@/lib/format";
 import { fetcher } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import type { HostMetrics, HostReservation, ListingDetail } from "@/types";
@@ -96,9 +96,7 @@ export function HostDashboard() {
                   <tr key={r.id} className="border-t border-divider">
                     <td className="px-4 py-3">{r.guest.name}</td>
                     <td className="hidden px-4 py-3 sm:table-cell">{r.listing.title}</td>
-                    <td className="px-4 py-3">
-                      {r.check_in} → {r.check_out}
-                    </td>
+                    <td className="px-4 py-3">{formatDateRange(r.check_in, r.check_out)}</td>
                     <td className="px-4 py-3">{formatPrice(r.total_cents)}</td>
                   </tr>
                 ))}
