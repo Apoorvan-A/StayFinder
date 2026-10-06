@@ -36,10 +36,17 @@ flowchart TD
   modules (search, listing, booking, host); `hooks/`; `types/` shared contracts.
 - Global state kept minimal: a demo-user context + favorites cache (SWR).
 
+## Auth & sessions
+Google Identity Services yields an ID token the frontend posts to `/api/auth/google`; the
+backend verifies it (`google-auth`), upserts a user keyed on the Google subject id, and issues
+a signed **HttpOnly** session cookie (`itsdangerous`). Demo guest/host logins issue the same
+cookie. Every request resolves identity from the cookie — there is no client-supplied user id.
+
 ## Trust boundary
-The frontend never computes authoritative totals or availability. The backend recomputes
-price and re-checks conflicts inside the booking transaction, and enforces ownership on all
-host/guest mutations regardless of IDs supplied by the client.
+The frontend never computes authoritative totals or availability, and never asserts identity.
+The backend derives the user from the session cookie, recomputes price and re-checks conflicts
+inside the booking transaction, and enforces ownership on all host/guest mutations regardless
+of anything supplied in the request body.
 
 ## Deployment
 - Frontend → Vercel (`NEXT_PUBLIC_API_URL` → backend).

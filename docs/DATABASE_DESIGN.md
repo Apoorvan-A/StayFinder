@@ -6,7 +6,9 @@ availability model is the core correctness concern.
 ## Entities & key decisions
 
 - **users** — `id`, `name`, `email` (unique), `avatar_url`, `role` (`guest`/`host`),
-  `is_superhost`, `created_at`. Auth is mocked; a user can act as a host once they own listings.
+  `is_superhost`, `provider` (`google`/`demo`), `provider_subject_id` (unique external id),
+  `created_at`. Google accounts are keyed on the immutable `provider_subject_id`, not email;
+  a guest enables hosting by switching `role` to `host`.
 - **listings** — host-owned property. Price stored as `nightly_price_cents` (integer
   minor units — no float money). Denormalized `rating`/`review_count` are **derived** and
   recomputed from reviews, kept for cheap list queries. Geo via `latitude`/`longitude`.

@@ -29,6 +29,11 @@ guest cannot hit host mutation endpoints (403).
 
 **Host CRUD**: create; update; delete behavior with existing bookings (no orphans).
 
+**Auth**: `/auth/me` requires a session; demo login sets a working session; logout clears it;
+first Google login provisions a user and returning login reuses it (Google verification
+mocked); invalid/tampered tokens and cookies are rejected; guest→host promotion; a booking is
+attributed to the session user, not the request body.
+
 ## Frontend
 - `next build` + `tsc --noEmit` + `eslint` must pass clean.
 - Manual critical-flow verification in a real browser (search → book → trip; favorite; host CRUD).

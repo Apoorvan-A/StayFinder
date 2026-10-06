@@ -54,11 +54,13 @@ accessible modals and controls, graceful 404.
 | Frontend  | Next.js 14 (App Router), TypeScript, Tailwind CSS, SWR, react-day-picker, Lucide, Sonner |
 | Backend   | FastAPI, SQLAlchemy 2.0 (typed), Pydantic v2, Uvicorn |
 | Database  | SQLite |
-| Testing   | pytest (39 backend tests) |
+| Auth      | Google Identity Services + HttpOnly signed session cookie (google-auth, itsdangerous) |
+| Testing   | pytest (50 backend tests) |
 
-Money is stored and computed as **integer cents** end to end. Auth is mocked via a
-demo-user switcher (an `X-Demo-User-Id` header); ownership and all pricing/availability
-remain authoritative on the backend.
+Money is stored and computed as **integer cents** end to end. Authentication uses **Google
+sign-in** with an **HttpOnly signed session cookie**; the backend derives identity from the
+session, never from a client-supplied id. Instant **demo guest/host** sessions flow through
+the same architecture so evaluators can explore without any setup.
 
 ---
 
@@ -140,6 +142,31 @@ REST under `/api`, interactive docs at `/docs`. Errors use a consistent
 | GET | `/api/host/metrics` | Host dashboard metrics |
 | GET/POST/PATCH/DELETE | `/api/host/listings...` | Listing CRUD (ownership enforced) |
 | GET | `/api/host/reservations` | Reservations across owned listings |
+| GET | `/api/auth/me` · `/api/auth/config` | Current session · public client config |
+| POST | `/api/auth/google` · `/api/auth/demo` | Sign in with Google · start a demo session |
+| POST | `/api/auth/become-host` · `/api/auth/logout` | Enable hosting · sign out |
+
+---
+
+## Authentication
+
+- **Google sign-in** ("Continue with Google"): the frontend obtains a Google ID token via
+  Google Identity Services and posts it to `/api/auth/google`. The backend verifies the token
+  with `google-auth`, upserts a user keyed on the **provider subject id** (not email), and
+  issues a session.
+- **Sessions** are a signed, **HttpOnly** cookie (`itsdangerous`) — never `localStorage`. The
+  backend resolves the user from the cookie on every request; a client can never claim to be
+  another user by editing a request body or id.
+- **Authorization** is enforced server-side: guests cancel only their own bookings and manage
+  only their own favorites; hosts edit/delete only their own listings and see only their own
+  reservations and metrics.
+- **Guest → host:** new accounts start as guests and enable hosting in one click
+  (`/api/auth/become-host`) on the same account.
+- **Demo access** (`/api/auth/demo`) issues a session for a built-in guest or host identity
+  through the exact same cookie mechanism — no special bypass.
+
+Anonymous visitors can browse, search, filter, open listings and read reviews. Booking,
+favoriting, trips and hosting prompt a sign-in modal, preserving the intended action.
 
 ---
 
@@ -153,15 +180,16 @@ docs/        Planning & design docs (architecture, DB, API, design system, tests
 
 ---
 
-## Demo users
+## Demo access
 
-| Name | Role | Notes |
-|------|------|-------|
-| Alex Morgan | Guest | Has seeded upcoming, past and cancelled trips + a wishlist |
-| Sofia Ramos | Host (Superhost) | Owns ~16 listings with reservations and reviews |
-| Daniel Kim | Host (Superhost) | Owns the remaining listings |
+Open the account menu (or any sign-in prompt) and choose **Explore as a demo guest** or
+**Explore as a demo host** — no Google account needed. Each starts a real session.
 
-Switch between them from the avatar menu. The selection persists for the session.
+| Identity | Role | Notes |
+|----------|------|-------|
+| Alex Morgan | Demo guest | Seeded upcoming, past and cancelled trips + a wishlist |
+| Sofia Ramos | Demo host (Superhost) | Owns ~16 listings with reservations and reviews |
+| Daniel Kim | Demo host (Superhost) | Owns the remaining listings |
 
 ---
 
@@ -202,21 +230,41 @@ App at `http://localhost:3000`.
 - `DATABASE_URL` — default `sqlite:///./app.db`
 - `CORS_ORIGINS` — comma-separated allowed origins (the frontend URL)
 - `SEED_ON_STARTUP` — `1` to seed an empty DB on boot
+- `SESSION_SECRET` — secret used to sign session cookies (set a strong value in production)
+- `COOKIE_SECURE` / `COOKIE_SAMESITE` — `1` / `none` for a cross-site HTTPS deployment, else `0` / `lax`
+- `GOOGLE_CLIENT_ID` — Google OAuth web client id (blank disables Google sign-in; demo access still works)
 
 **Frontend** (`frontend/.env.local`)
-- `NEXT_PUBLIC_API_URL` — base URL of the backend
+- `NEXT_PUBLIC_API_URL` — base URL of the backend (the Google client id is served by the backend)
+
+---
+
+## Google OAuth setup (optional for local dev)
+
+Demo access needs no setup. To enable "Continue with Google":
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/) create an **OAuth client
+   ID** of type **Web application**.
+2. Add **Authorized JavaScript origins**: `http://localhost:3000` (and your deployed frontend
+   origin in production).
+3. Put the client id in `backend/.env` as `GOOGLE_CLIENT_ID`. The frontend reads it from
+   `/api/auth/config`, so no frontend env var is needed.
+
+Never commit the client id or any secret.
 
 ---
 
 ## Tests
 
 ```bash
-cd backend && pytest        # 39 tests: booking matrix, ownership, favorites, host CRUD
+cd backend && pytest        # 50 tests: booking matrix, ownership, favorites, host CRUD, auth
 cd frontend && npm run build && npm run lint   # type-safe production build + lint
 ```
 
 The booking suite covers overlap/adjacency, surrounding/inside ranges, zero-night, past
-dates, capacity, server-side pricing, and cancellation freeing availability.
+dates, capacity, server-side pricing, and cancellation freeing availability. Auth tests cover
+first-login provisioning, returning-user reuse, session enforcement, tampered cookies, and the
+guest→host transition (Google verification is mocked — no live Google calls).
 
 ---
 
@@ -234,8 +282,9 @@ is used so bookings survive restarts.
 
 ## Engineering decisions & assumptions
 
-- **Mocked auth by design** (permitted by the assignment) via a demo-user switcher. Ownership
-  is still enforced server-side, so changing an ID cannot mutate another host's data.
+- **Auth:** Google sign-in plus demo sessions, both over an HttpOnly signed session cookie.
+  Identity is resolved server-side from the cookie; the frontend can never assert who it is.
+  Demo access is kept so evaluators can start instantly without credentials.
 - **No Alembic:** for a SQLite demo, `create_all` + an idempotent seed is more reliable and
   reproducible than migrations. Documented rather than hidden.
 - **Integer cents** everywhere to avoid floating-point money bugs.
@@ -249,4 +298,4 @@ is used so bookings survive restarts.
 - Reviews are seeded; post-stay review creation is a natural next step (eligibility is
   already modeled via `booking_id`).
 - Messaging and identity verification are intentionally out of scope.
-- A production deployment would move to Postgres and real auth.
+- A production deployment would move to Postgres; the auth layer is already real.

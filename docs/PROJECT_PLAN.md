@@ -8,7 +8,7 @@ with Airbnb-level UI fidelity and server-authoritative booking correctness.
 ## Stack
 - Frontend: Next.js 14 (App Router), TypeScript, Tailwind, Lucide, date-fns, react-day-picker, Sonner, SWR.
 - Backend: FastAPI, SQLAlchemy 2.0, Pydantic v2, SQLite, pytest.
-- Money as integer cents. Mocked auth via demo-user switcher + `X-Demo-User-Id` header.
+- Money as integer cents. Google sign-in + demo sessions over an HttpOnly session cookie.
 
 ## Phases
 1. Foundation (structure, boot both apps, health, CORS, docs) ✅ docs
@@ -31,7 +31,8 @@ with Airbnb-level UI fidelity and server-authoritative booking correctness.
 18. Final production + hiring-manager audit
 
 ## Assumptions (documented)
-- Auth is mocked by design (assignment permits). Ownership still enforced server-side.
+- Real Google auth with HttpOnly session cookies; demo sessions use the same mechanism so
+  evaluators need no credentials. Ownership enforced server-side from the session.
 - No Alembic: SQLite demo uses `create_all` + idempotent seed for reliability.
 - Images use curated royalty-free remote URLs (Unsplash) + local fallbacks; documented licensing.
 - Reviews can be seeded; leaving a review post-stay is a bonus if time permits.

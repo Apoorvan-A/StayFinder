@@ -1,8 +1,9 @@
 # API Design
 
 REST, JSON, served by FastAPI under `/api`. Interactive docs at `/docs`.
-Demo identity is passed via `X-Demo-User-Id` header (mocked auth). Backend is authoritative
-for all validation, pricing, and ownership.
+Identity comes from a signed **HttpOnly session cookie** (`sf_session`); the backend resolves
+the current user from it and is authoritative for all validation, pricing, and ownership. The
+frontend sends requests with `credentials: "include"`.
 
 ## Conventions
 - Pagination: `?page=1&page_size=18` → `{ items: [...], page, page_size, total, total_pages }`.
@@ -18,9 +19,13 @@ for all validation, pricing, and ownership.
 ### System
 - `GET /api/health` → `{ status: "ok" }`
 
-### Users (demo)
-- `GET /api/users/demo` → list of switchable demo users (guest + hosts)
-- `GET /api/users/me` → current user from `X-Demo-User-Id`
+### Auth
+- `GET /api/auth/config` → `{ google_client_id }` (whether Google sign-in is available)
+- `GET /api/auth/me` → current user (401 if anonymous)
+- `POST /api/auth/google` → verify a Google ID token, upsert user, set session cookie
+- `POST /api/auth/demo` → `{ role }` starts a demo guest/host session (same cookie mechanism)
+- `POST /api/auth/become-host` → promote current user to host
+- `POST /api/auth/logout` → clear the session cookie
 
 ### Listings
 - `GET /api/listings` — query: `location, check_in, check_out, guests, min_price, max_price,
