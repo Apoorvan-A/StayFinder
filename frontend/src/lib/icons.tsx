@@ -1,0 +1,72 @@
+import {
+  Bath,
+  BellRing,
+  Building2,
+  Car,
+  Check,
+  Cross,
+  Dumbbell,
+  Flame,
+  FlameKindling,
+  Gem,
+  Key,
+  Laptop,
+  type LucideIcon,
+  Mountain,
+  Palette,
+  Palmtree,
+  PawPrint,
+  PlugZap,
+  Thermometer,
+  TreePine,
+  Tv,
+  Umbrella,
+  Utensils,
+  WashingMachine,
+  Waves,
+  Wheat,
+  Wifi,
+  Wind,
+} from "lucide-react";
+
+// Fallback-safe icon registry. Keys map to amenity.icon strings from the API and to
+// category identifiers used by the home page.
+const ICONS: Record<string, LucideIcon> = {
+  // amenities
+  wifi: Wifi,
+  utensils: Utensils,
+  car: Car,
+  wind: Wind,
+  thermometer: Thermometer,
+  "washing-machine": WashingMachine,
+  tv: Tv,
+  waves: Waves,
+  bath: Bath,
+  dumbbell: Dumbbell,
+  laptop: Laptop,
+  "paw-print": PawPrint,
+  flame: Flame,
+  "flame-kindling": FlameKindling,
+  umbrella: Umbrella,
+  mountain: Mountain,
+  key: Key,
+  "bell-ring": BellRing,
+  cross: Cross,
+  "plug-zap": PlugZap,
+  check: Check,
+  // categories
+  Trending: Flame,
+  Beachfront: Umbrella,
+  Cabins: TreePine,
+  "Amazing views": Mountain,
+  Luxe: Gem,
+  Countryside: Wheat ?? Palmtree,
+  Tropical: Palmtree,
+  Design: Palette,
+  Lakefront: Waves,
+  City: Building2,
+};
+
+export function resolveIcon(key: string): LucideIcon {
+  return ICONS[key] ?? Check;
+}

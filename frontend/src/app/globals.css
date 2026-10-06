@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: #222222;
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .edge-fade-x {
+    mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-brand px-5 py-3 font-semibold text-white transition active:scale-[0.98] hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-ink px-5 py-3 font-semibold text-ink transition active:scale-[0.98] hover:bg-surface;
+  }
+  .skeleton {
+    @apply relative overflow-hidden bg-divider;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+}
+
+/* react-day-picker theming to match the brand */
+.rdp {
+  --rdp-cell-size: 42px;
+  --rdp-accent-color: #222222;
+  --rdp-background-color: #f7f7f7;
+  margin: 0;
+}
+.rdp-day_selected,
+.rdp-day_selected:focus-visible,
+.rdp-day_selected:hover {
+  background-color: #222222 !important;
+  color: #ffffff !important;
+}
+.rdp-day_range_middle {
+  background-color: #f7f7f7 !important;
+  color: #222222 !important;
+  border-radius: 0 !important;
+}
+.rdp-day_range_start,
+.rdp-day_range_end {
+  background-color: #222222 !important;
+  color: #ffffff !important;
+}
+.rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  border: 1px solid #222222;
+}
+.rdp-day_disabled {
+  color: #c2c2c2;
+  text-decoration: line-through;
+}
