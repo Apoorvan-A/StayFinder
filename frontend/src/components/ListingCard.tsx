@@ -90,20 +90,17 @@ export function ListingCard({ listing, priority = false }: { listing: ListingCar
         )}
       </div>
 
-      <div className="mt-3 space-y-0.5">
+      <div className="mt-2.5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="truncate font-medium text-ink">
+          <h3 className="truncate text-[15px] font-medium leading-tight text-ink">
             {listing.city}, {listing.country}
           </h3>
-          <StarRating rating={listing.rating} />
+          <StarRating rating={listing.rating} className="mt-0.5 shrink-0" />
         </div>
-        <p className="truncate text-ink-muted">{listing.title}</p>
-        <p className="text-ink-muted">
-          {listing.bedrooms} {listing.bedrooms === 1 ? "bedroom" : "bedrooms"}
-        </p>
-        <p className="pt-1 text-ink">
-          <span className="font-semibold">{formatNightlyPrice(listing.nightly_price_cents)}</span>{" "}
-          <span className="font-normal">night</span>
+        <p className="mt-0.5 truncate text-[15px] leading-tight text-ink-muted">{listing.title}</p>
+        <p className="mt-1.5 text-[15px] text-ink">
+          <span className="font-semibold">{formatNightlyPrice(listing.nightly_price_cents)}</span>
+          <span className="font-normal"> night</span>
         </p>
       </div>
     </Link>

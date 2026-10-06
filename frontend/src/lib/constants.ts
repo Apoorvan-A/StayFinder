@@ -16,4 +16,4 @@ export const SORT_OPTIONS = [
   { value: "rating", label: "Top rated" },
 ] as const;
 
-export const PAGE_SIZE = 18;
+export const PAGE_SIZE = 24;

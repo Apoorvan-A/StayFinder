@@ -8,8 +8,8 @@ export default function HomePage() {
   return (
     <Suspense
       fallback={
-        <Container className="py-8">
-          <ListingGridSkeleton count={18} />
+        <Container size="wide" className="py-8">
+          <ListingGridSkeleton count={24} />
         </Container>
       }
     >

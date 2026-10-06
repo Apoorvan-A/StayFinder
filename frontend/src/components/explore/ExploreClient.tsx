@@ -79,12 +79,12 @@ export function ExploreClient() {
   return (
     <>
       <div className="sticky top-16 z-30 border-b border-divider bg-white md:top-20">
-        <Container>
+        <Container size="wide">
           <CategoryRow onOpenFilters={() => setFiltersOpen(true)} activeFilterCount={activeFilterCount} />
         </Container>
       </div>
 
-      <Container className="py-6">
+      <Container size="wide" className="py-6">
         <div className="mb-4 flex items-center justify-between gap-4">
           <p className="text-sm text-ink-muted">
             {data ? `${data.total} ${data.total === 1 ? "stay" : "stays"}` : "Searching…"}

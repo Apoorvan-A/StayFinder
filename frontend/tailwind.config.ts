@@ -5,16 +5,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // StayFinder brand (Airbnb-inspired "Rausch").
+        // StayFinder brand — a warm "sunset coral", deliberately distinct from
+        // Airbnb's exact Rausch while keeping the warm travel feel.
         brand: {
-          DEFAULT: "#FF385C",
-          dark: "#E00B41",
-          light: "#FF5A7A",
+          DEFAULT: "#E8505B",
+          dark: "#CC3A46",
+          light: "#F2787F",
+          tint: "#FDECEE",
         },
         ink: {
           DEFAULT: "#222222",
-          muted: "#717171",
-          subtle: "#6A6A6A",
+          muted: "#6A6A6A",
+          subtle: "#949494",
         },
         hairline: "#DDDDDD",
         divider: "#EBEBEB",
@@ -22,6 +24,7 @@ const config: Config = {
       },
       maxWidth: {
         content: "1280px",
+        wide: "2080px",
       },
       borderRadius: {
         xl: "12px",
