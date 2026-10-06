@@ -14,6 +14,10 @@ from app.models import User, UserRole
 
 _SESSION_SALT = "stayfinder-session"
 
+# Stable identities for the built-in demo slots, independent of mutable role.
+DEMO_GUEST_EMAIL = "alex@stayfinder.demo"
+DEMO_HOST_EMAIL = "sofia@stayfinder.demo"
+
 
 @lru_cache
 def _serializer() -> URLSafeTimedSerializer:
@@ -91,13 +95,28 @@ def upsert_google_user(db: Session, claims: dict) -> User:
 
 
 def get_demo_user(db: Session, role: str) -> User:
-    """Resolve a built-in demo identity for instant, friction-free evaluation."""
+    """Resolve a built-in demo identity for instant, friction-free evaluation.
+
+    Demo slots are keyed on a stable email (not the mutable role), and the slot's role is
+    reset on each login so demo sessions are always deterministic — e.g. "demo guest" is
+    always a guest even if a previous session promoted that shared account to host.
+    """
     wanted = UserRole.HOST if role == UserRole.HOST else UserRole.GUEST
-    user = db.scalar(
-        select(User)
-        .where(User.is_demo_switchable.is_(True), User.role == wanted)
-        .order_by(User.id)
-    )
+    email = DEMO_HOST_EMAIL if wanted == UserRole.HOST else DEMO_GUEST_EMAIL
+
+    user = db.scalar(select(User).where(User.email == email))
+    if user is None:
+        # Fallback: any switchable demo user currently holding the wanted role.
+        user = db.scalar(
+            select(User)
+            .where(User.is_demo_switchable.is_(True), User.role == wanted)
+            .order_by(User.id)
+        )
     if user is None:
         raise UnauthorizedError("No demo user is available. Reseed the database.")
+
+    if user.role != wanted:
+        user.role = wanted
+        db.commit()
+        db.refresh(user)
     return user

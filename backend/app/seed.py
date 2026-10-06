@@ -24,6 +24,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.services.auth_service import DEMO_GUEST_EMAIL, DEMO_HOST_EMAIL
 from app.services.booking_service import _generate_confirmation_code
 from app.services.pricing import calculate_price
 from app.services.review_service import recompute_aggregates
@@ -200,7 +201,7 @@ def seed(db: Session) -> None:
     # --- Primary demo users (switcher) ---
     guest = User(
         name="Alex Morgan",
-        email="alex@stayfinder.demo",
+        email=DEMO_GUEST_EMAIL,
         avatar_url=_avatar("alex"),
         role=UserRole.GUEST,
         is_demo_switchable=True,
@@ -208,7 +209,7 @@ def seed(db: Session) -> None:
     )
     host_sofia = User(
         name="Sofia Ramos",
-        email="sofia@stayfinder.demo",
+        email=DEMO_HOST_EMAIL,
         avatar_url=_avatar("sofia"),
         role=UserRole.HOST,
         is_superhost=True,

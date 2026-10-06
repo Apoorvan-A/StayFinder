@@ -1,4 +1,6 @@
+from app.models import User, UserRole
 from app.services import auth_service
+from app.services.auth_service import DEMO_GUEST_EMAIL
 from tests.conftest import auth
 
 
@@ -59,6 +61,26 @@ def test_invalid_google_token_rejected(client, seeded, monkeypatch):
 
     monkeypatch.setattr(auth_service, "verify_google_credential", _raise)
     assert client.post("/api/auth/google", json={"credential": "bad"}).status_code == 401
+
+
+def test_demo_guest_login_resets_role_after_promotion(client, db_session, seeded):
+    # Simulate a prior session having promoted the shared demo guest account to host.
+    db_session.add(
+        User(
+            name="Alex Morgan",
+            email=DEMO_GUEST_EMAIL,
+            role=UserRole.HOST,
+            is_demo_switchable=True,
+        )
+    )
+    db_session.commit()
+
+    res = client.post("/api/auth/demo", json={"role": "guest"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["email"] == DEMO_GUEST_EMAIL
+    # The demo-guest slot self-heals back to a guest for a deterministic session.
+    assert body["role"] == "guest"
 
 
 def test_become_host_promotes_guest(client, seeded):
