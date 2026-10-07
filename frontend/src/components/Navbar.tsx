@@ -23,7 +23,7 @@ export function Navbar() {
           </div>
 
           {showSearch && (
-            <div className="hidden w-full max-w-[680px] flex-shrink-0 md:block xl:max-w-[820px]">
+            <div className="hidden w-full max-w-[640px] flex-shrink-0 lg:block xl:max-w-[820px]">
               <Suspense fallback={<div className="mx-auto h-14 w-full rounded-full border border-hairline" />}>
                 <SearchBar />
               </Suspense>
@@ -41,9 +41,9 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile search row */}
+        {/* Compact search row for mobile and tablet (the large search shows at lg+). */}
         {showSearch && (
-          <div className="pb-3 md:hidden">
+          <div className="pb-3 lg:hidden">
             <Suspense fallback={<div className="h-12 w-full rounded-full border border-hairline" />}>
               <SearchBar variant="compact" />
             </Suspense>

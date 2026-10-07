@@ -73,7 +73,7 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
     <button
       type="button"
       onClick={() => setMobileOpen(true)}
-      className="flex w-full items-center gap-3 rounded-full border border-hairline bg-white px-4 py-3 shadow-pill md:hidden"
+      className="flex w-full items-center gap-3 rounded-full border border-hairline bg-white px-4 py-3 shadow-pill lg:hidden"
     >
       <Search className="h-4 w-4 text-ink" />
       <span className="flex flex-col items-start">
@@ -89,11 +89,11 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
 
   return (
     <>
-      {/* Mobile */}
-      <div className={cn("w-full", variant === "compact" && "md:hidden")}>{mobileTrigger}</div>
+      {/* Mobile + tablet compact trigger */}
+      <div className={cn("w-full", variant === "compact" && "lg:hidden")}>{mobileTrigger}</div>
 
-      {/* Desktop — a prominent, always-visible segmented search bar */}
-      <div ref={ref} className="relative mx-auto hidden w-full md:block">
+      {/* Desktop (lg+) — a prominent, always-visible segmented search bar */}
+      <div ref={ref} className="relative mx-auto hidden w-full lg:block">
         <div
           className={cn(
             "flex items-center rounded-full border bg-white transition",

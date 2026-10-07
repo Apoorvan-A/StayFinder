@@ -25,8 +25,16 @@ export function CategoryRow({ onOpenFilters, activeFilterCount }: { onOpenFilter
   const all = ["All", ...(categories ?? [])];
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="no-scrollbar edge-fade-x flex flex-1 items-center gap-7 overflow-x-auto py-4">
+    // 3-column grid: equal 1fr spacers on both sides page-center the category group,
+    // while Filters stays anchored in the right column. The center column shrinks and
+    // scrolls when the categories no longer fit, instead of compressing them.
+    <div className="grid grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-4">
+      <div aria-hidden />
+
+      <nav
+        aria-label="Browse by category"
+        className="no-scrollbar edge-fade-x flex min-w-0 items-center gap-7 overflow-x-auto py-4"
+      >
         {all.map((category) => {
           const key = category === "All" ? null : category;
           const isActive = category === "All" ? !active : active === category;
@@ -36,6 +44,7 @@ export function CategoryRow({ onOpenFilters, activeFilterCount }: { onOpenFilter
               key={category}
               type="button"
               onClick={() => select(key)}
+              aria-pressed={isActive}
               className={cn(
                 "flex min-w-fit flex-col items-center gap-2 border-b-2 pb-2 text-xs transition",
                 isActive
@@ -48,21 +57,23 @@ export function CategoryRow({ onOpenFilters, activeFilterCount }: { onOpenFilter
             </button>
           );
         })}
-      </div>
+      </nav>
 
-      <button
-        type="button"
-        onClick={onOpenFilters}
-        className="flex flex-shrink-0 items-center gap-2 rounded-xl border border-hairline px-4 py-2.5 text-sm font-medium transition hover:border-ink"
-      >
-        <SlidersHorizontal className="h-4 w-4" />
-        Filters
-        {activeFilterCount > 0 && (
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-ink text-xs text-white">
-            {activeFilterCount}
-          </span>
-        )}
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onOpenFilters}
+          className="flex flex-shrink-0 items-center gap-2 rounded-xl border border-hairline bg-white px-4 py-2.5 text-sm font-medium transition hover:border-ink"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="grid h-5 w-5 place-items-center rounded-full bg-ink text-xs text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
