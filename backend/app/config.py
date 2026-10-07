@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
 
     # AI Concierge (optional). Empty api key → deterministic fallback parser is used.
-    ai_provider: str = ""  # e.g. "anthropic"
+    ai_provider: str = ""  # e.g. "gemini"
     ai_api_key: str = ""
     ai_model: str = ""
 
