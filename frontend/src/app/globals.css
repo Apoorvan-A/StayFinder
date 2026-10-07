@@ -48,6 +48,46 @@ body {
   }
 }
 
+/* Leaflet maps */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #e9eef2;
+  z-index: 0;
+}
+.leaflet-container a {
+  color: #4a4a4a;
+}
+.sf-pin {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #e8505b;
+  border: 3px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.sf-price-marker {
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  background: #ffffff;
+  color: #222222;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.sf-price-marker:hover,
+.sf-price-marker.active {
+  background: #222222;
+  color: #ffffff;
+  transform: translate(-50%, -50%) scale(1.08);
+  z-index: 1000;
+}
+
 /* react-day-picker theming to match the brand */
 .rdp {
   --rdp-cell-size: 42px;

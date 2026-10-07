@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchX } from "lucide-react";
+import { Map as MapIcon, SearchX, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -8,6 +8,8 @@ import useSWR from "swr";
 import { CategoryRow } from "@/components/CategoryRow";
 import { FilterModal } from "@/components/FilterModal";
 import { ListingGrid, ListingGridSkeleton } from "@/components/ListingGrid";
+import { MapResults } from "@/components/explore/MapResults";
+import { ResultsMap } from "@/components/map/ResultsMap";
 import { Container } from "@/components/ui/Container";
 import { fetcher } from "@/lib/api";
 import { PAGE_SIZE, SORT_OPTIONS } from "@/lib/constants";
@@ -47,6 +49,8 @@ export function ExploreClient() {
   const params = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [pagesLoaded, setPagesLoaded] = useState(1);
+  const [showMap, setShowMap] = useState(false);
+  const [mobileMapOpen, setMobileMapOpen] = useState(false);
 
   const paramsString = params.toString();
 
@@ -89,7 +93,17 @@ export function ExploreClient() {
           <p className="text-sm text-ink-muted">
             {data ? `${data.total} ${data.total === 1 ? "stay" : "stays"}` : "Searching…"}
           </p>
-          <SortSelect current={sort} paramsString={paramsString} />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowMap((s) => !s)}
+              className="hidden items-center gap-2 rounded-lg border border-hairline px-4 py-2.5 text-sm font-medium transition hover:border-ink lg:inline-flex"
+            >
+              {showMap ? <X className="h-4 w-4" /> : <MapIcon className="h-4 w-4" />}
+              {showMap ? "Hide map" : "Show map"}
+            </button>
+            <SortSelect current={sort} paramsString={paramsString} />
+          </div>
         </div>
 
         {isLoading && !data ? (
@@ -106,7 +120,7 @@ export function ExploreClient() {
           />
         ) : (
           <>
-            <ListingGrid listings={listings} />
+            {showMap ? <MapResults listings={listings} /> : <ListingGrid listings={listings} />}
             {hasMore && (
               <div className="mt-10 flex justify-center">
                 <button
@@ -121,6 +135,31 @@ export function ExploreClient() {
           </>
         )}
       </Container>
+
+      {/* Mobile: a floating control that opens a fullscreen map. */}
+      {listings.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setMobileMapOpen(true)}
+          className="fixed bottom-20 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white shadow-card lg:hidden"
+        >
+          <MapIcon className="h-4 w-4" /> Map
+        </button>
+      )}
+      {mobileMapOpen && (
+        <div className="fixed inset-0 z-[80] bg-white lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileMapOpen(false)}
+            className="absolute left-4 top-4 z-[90] flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold shadow-card"
+          >
+            <X className="h-4 w-4" /> Close
+          </button>
+          <div className="h-full w-full">
+            <ResultsMap listings={listings} activeId={null} onSelect={() => undefined} />
+          </div>
+        </div>
+      )}
 
       <FilterModal open={filtersOpen} onClose={() => setFiltersOpen(false)} />
     </>

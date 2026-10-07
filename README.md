@@ -27,7 +27,10 @@ Pick a demo identity from the avatar menu (top-right): **Alex Morgan** (guest),
 **Guest**
 - Explore grid with photo-forward cards, guest-favorite badges, per-card image carousel
 - Expandable search (destination · dates · guests) with shareable URL state
-- Category row + a full filter sheet (price, property type, rooms, amenities, rating)
+- Category row + a full filter sheet (price, property type, rooms, amenities, rating) with a
+  live result count
+- **Map view**: a desktop split view (results + interactive price-marker map that highlights
+  the hovered/selected card) and a mobile fullscreen map
 - Pagination via "show more"
 - Listing detail: hero gallery + photo modal, amenities, **Meet your host**,
   **Where you'll be** (approximate area only), reviews, and **Things to know** (house rules,
@@ -61,7 +64,7 @@ only the general area; the exact address is revealed only on a confirmed reserva
 | Backend   | FastAPI, SQLAlchemy 2.0 (typed), Pydantic v2, Uvicorn |
 | Database  | SQLite |
 | Auth      | Google Identity Services + HttpOnly signed session cookie (google-auth, itsdangerous) |
-| Maps      | Embedded OpenStreetMap (approximate area) + Google Maps external directions link |
+| Maps      | Interactive Leaflet + OpenStreetMap tiles (price-marker results map, approximate listing map, exact reservation map) + Google Maps external directions |
 | Testing   | pytest (63 backend tests) |
 
 Money is stored and computed as **integer cents** end to end. Authentication uses **Google

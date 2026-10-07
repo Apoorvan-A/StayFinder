@@ -8,6 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
+import { PropertyMap } from "@/components/map/PropertyMap";
 import { StartMessageButton } from "@/components/messaging/StartMessageButton";
 import { StarRating } from "@/components/StarRating";
 import { Container } from "@/components/ui/Container";
@@ -106,13 +107,21 @@ export function ReservationDetailClient({ id }: { id: number }) {
         <Detail label="Guests" value={`${trip.guest_count} ${trip.guest_count === 1 ? "guest" : "guests"}`} />
       </div>
 
-      {/* Exact address + directions — only for confirmed reservations. */}
+      {/* Exact address + map + directions — only for confirmed reservations. */}
       {trip.exact_address && (
         <div className="mt-6 rounded-2xl border border-divider p-5">
           <h2 className="flex items-center gap-2 font-semibold">
             <MapPin className="h-4 w-4" /> Getting there
           </h2>
           <p className="mt-2 text-ink">{trip.exact_address}</p>
+          {trip.latitude != null && trip.longitude != null && (
+            <PropertyMap
+              latitude={trip.latitude}
+              longitude={trip.longitude}
+              exact
+              className="mt-4 h-[260px]"
+            />
+          )}
           <a
             href={directionsUrl(trip)}
             target="_blank"

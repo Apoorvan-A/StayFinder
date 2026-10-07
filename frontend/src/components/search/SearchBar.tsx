@@ -105,14 +105,14 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
               setExpanded(true);
               setSection("where");
             }}
-            className="flex items-center gap-2 rounded-full border border-hairline bg-white py-2 pl-6 pr-2 shadow-pill transition hover:shadow-card"
+            className="flex items-center rounded-full border border-hairline bg-white py-1.5 pl-6 pr-1.5 shadow-pill transition hover:shadow-card"
           >
-            <span className="text-sm font-medium text-ink">{location || "Anywhere"}</span>
+            <span className="px-2 text-sm font-semibold text-ink">{location || "Anywhere"}</span>
             <span className="h-6 w-px bg-hairline" />
-            <span className="text-sm font-medium text-ink">{dateLabel}</span>
+            <span className="px-4 text-sm font-semibold text-ink">{dateLabel}</span>
             <span className="h-6 w-px bg-hairline" />
-            <span className="text-sm text-ink-muted">{guestLabel}</span>
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-brand text-white">
+            <span className="px-4 text-sm text-ink-muted">{guestLabel}</span>
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-brand text-white">
               <Search className="h-4 w-4" />
             </span>
           </button>

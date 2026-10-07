@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import useSWR from "swr";
 
+import { PropertyMap } from "@/components/map/PropertyMap";
 import { StartMessageButton } from "@/components/messaging/StartMessageButton";
 import { StarRating } from "@/components/StarRating";
 import { Modal } from "@/components/ui/Modal";
@@ -142,13 +143,6 @@ export function MeetYourHost({ listing }: { listing: ListingDetail }) {
 
 export function WhereYoullBe({ listing }: { listing: ListingDetail }) {
   const hasCoords = listing.latitude != null && listing.longitude != null;
-  let src = "";
-  if (hasCoords) {
-    const { latitude: lat, longitude: lng } = listing;
-    const delta = 0.035; // Broad bounding box → approximate area, not an exact pin.
-    const bbox = `${lng! - delta},${lat! - delta},${lng! + delta},${lat! + delta}`;
-    src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik`;
-  }
   return (
     <section>
       <h2 className="mb-2 text-2xl font-semibold">Where you&apos;ll be</h2>
@@ -156,9 +150,7 @@ export function WhereYoullBe({ listing }: { listing: ListingDetail }) {
         {listing.city}, {listing.country}
       </p>
       {hasCoords && (
-        <div className="overflow-hidden rounded-2xl border border-divider">
-          <iframe title={`Approximate map of ${listing.city}`} src={src} className="h-[340px] w-full" loading="lazy" />
-        </div>
+        <PropertyMap latitude={listing.latitude!} longitude={listing.longitude!} exact={false} />
       )}
       <p className="mt-4 leading-relaxed text-ink">{listing.area_description}</p>
       <p className="mt-3 flex items-center gap-2 text-sm text-ink-muted">
