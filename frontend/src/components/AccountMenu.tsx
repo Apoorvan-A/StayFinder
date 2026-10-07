@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Heart, Home, LayoutDashboard, Luggage, Menu, MessageCircle, UserCircle } from "lucide-react";
+import { Compass, Heart, Home, LayoutDashboard, Luggage, Menu, MessageCircle, Sparkles, UserCircle } from "lucide-react";
 import { SafeImage as Image } from "@/components/SafeImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,10 +9,12 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/hooks/useAuth";
+import { useConcierge } from "@/hooks/useConcierge";
 import type { Role } from "@/types";
 
 export function AccountMenu() {
   const { user, isAuthenticated, openAuthModal, loginDemo, logout, becomeHost } = useAuth();
+  const { openPanel: openConcierge } = useConcierge();
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
@@ -97,12 +99,14 @@ export function AccountMenu() {
                 <Action icon={<Home className="h-4 w-4" />} label="Become a host" onClick={handleBecomeHost} />
               )}
               <Divider />
+              <Action icon={<Sparkles className="h-4 w-4" />} label="Ask StayFinder" onClick={() => { close(); openConcierge(); }} />
               <Action label="Log out" onClick={handleLogout} />
             </>
           ) : (
             <>
               <Action label="Log in or sign up" bold onClick={() => { close(); openAuthModal(); }} />
               <Divider />
+              <Action icon={<Sparkles className="h-4 w-4" />} label="Ask StayFinder" onClick={() => { close(); openConcierge(); }} />
               <Action icon={<Compass className="h-4 w-4" />} label="Explore as demo guest" onClick={() => handleDemo("guest")} />
               <Action icon={<Home className="h-4 w-4" />} label="Explore as demo host" onClick={() => handleDemo("host")} />
             </>

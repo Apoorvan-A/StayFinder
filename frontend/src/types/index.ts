@@ -187,3 +187,12 @@ export interface ReviewSummary {
   review_count: number;
   reviews: Review[];
 }
+
+export interface ConciergeResponse {
+  interpretation: string;
+  clarify: string | null;
+  intent: Record<string, unknown>;
+  listings: ListingCard[];
+  total: number;
+  query_string: string;
+}

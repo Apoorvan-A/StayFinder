@@ -18,6 +18,19 @@ class Settings(BaseSettings):
     cookie_samesite: str = "lax"
     google_client_id: str = ""
 
+    # Public origin used when building links in outgoing emails.
+    frontend_url: str = "http://localhost:3000"
+
+    # AI Concierge (optional). Empty api key → deterministic fallback parser is used.
+    ai_provider: str = ""  # e.g. "anthropic"
+    ai_api_key: str = ""
+    ai_model: str = ""
+
+    # Transactional email (optional). Empty api key → delivery is skipped (logged).
+    email_provider: str = ""  # e.g. "resend"
+    email_api_key: str = ""
+    email_from: str = "StayFinder <onboarding@resend.dev>"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

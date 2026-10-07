@@ -1,6 +1,15 @@
 from fastapi import APIRouter
 
-from app.routers import auth, bookings, favorites, health, host, listings, messages
+from app.routers import (
+    auth,
+    bookings,
+    concierge,
+    favorites,
+    health,
+    host,
+    listings,
+    messages,
+)
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(health.router)
@@ -10,5 +19,6 @@ api_router.include_router(bookings.router)
 api_router.include_router(favorites.router)
 api_router.include_router(host.router)
 api_router.include_router(messages.router)
+api_router.include_router(concierge.router)
 
 __all__ = ["api_router"]
