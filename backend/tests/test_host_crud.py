@@ -1,6 +1,19 @@
 from tests.conftest import auth, iso
 
 
+def test_guest_must_become_host_before_using_host_routes(client, seeded):
+    client.cookies.update(auth(seeded["guest"]))
+    for path in ["metrics", "listings", "reservations", f"listings/{seeded['listing']}"]:
+        assert client.get(f"/api/host/{path}").status_code == 403
+    assert client.post("/api/host/listings", json=_new_listing_payload()).status_code == 403
+    assert client.patch(f"/api/host/listings/{seeded['listing']}",
+                        json={"title": "Unauthorized rename"}).status_code == 403
+    assert client.delete(f"/api/host/listings/{seeded['listing']}").status_code == 403
+    assert client.post("/api/auth/become-host").status_code == 200
+    assert client.get("/api/auth/me").json()["id"] == seeded["guest"]
+    assert client.post("/api/host/listings", json=_new_listing_payload()).status_code == 201
+
+
 def _new_listing_payload(**overrides):
     payload = {
         "title": "Brand New Loft",

@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import get_db
-from app.errors import UnauthorizedError
-from app.models import User
+from app.errors import ForbiddenError, UnauthorizedError
+from app.models import User, UserRole
 from app.services.auth_service import create_session_token, read_session_token
 
 DbSession = Annotated[Session, Depends(get_db)]
@@ -57,3 +57,12 @@ def clear_session_cookie(response: Response) -> None:
 
 OptionalUser = Annotated["User | None", Depends(get_optional_user)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_current_host(user: CurrentUser) -> User:
+    if user.role != UserRole.HOST:
+        raise ForbiddenError("Become a host to access hosting tools.")
+    return user
+
+
+CurrentHost = Annotated[User, Depends(get_current_host)]
