@@ -81,6 +81,25 @@ def create_booking(
     guests: int,
 ) -> Booking:
     """Create a confirmed booking atomically, re-checking conflicts inside the transaction."""
+    if db.get_bind().dialect.name == "sqlite":
+        # Authentication may already have opened a read transaction. Start a fresh write
+        # transaction before reading availability so competing writers cannot both pass.
+        db.rollback()
+        db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+    try:
+        return _create_booking_in_transaction(
+            db, guest_id=guest_id, listing_id=listing_id,
+            check_in=check_in, check_out=check_out, guests=guests,
+        )
+    except Exception:
+        db.rollback()
+        raise
+
+
+def _create_booking_in_transaction(
+    db: Session, *, guest_id: int, listing_id: int,
+    check_in: date, check_out: date, guests: int,
+) -> Booking:
     listing = _get_listing_or_404(db, listing_id)
     _validate_dates_and_guests(listing, check_in, check_out, guests)
 
