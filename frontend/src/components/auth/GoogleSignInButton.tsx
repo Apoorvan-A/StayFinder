@@ -1,7 +1,7 @@
 "use client";
 
 import Script from "next/script";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface GoogleCredentialResponse {
   credential: string;
@@ -33,13 +33,17 @@ export function GoogleSignInButton({
   onCredential: (credential: string) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const onCredentialRef = useRef(onCredential);
+  const initializedClientIdRef = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  const render = useCallback(() => {
-    if (!ready || !ref.current || !window.google) return;
+  onCredentialRef.current = onCredential;
+
+  useEffect(() => {
+    if (!ready || !ref.current || !window.google || initializedClientIdRef.current === clientId) return;
     window.google.accounts.id.initialize({
       client_id: clientId,
-      callback: (response) => onCredential(response.credential),
+      callback: (response) => onCredentialRef.current(response.credential),
     });
     window.google.accounts.id.renderButton(ref.current, {
       theme: "outline",
@@ -49,11 +53,8 @@ export function GoogleSignInButton({
       shape: "pill",
       logo_alignment: "left",
     });
-  }, [ready, clientId, onCredential]);
-
-  useEffect(() => {
-    render();
-  }, [render]);
+    initializedClientIdRef.current = clientId;
+  }, [ready, clientId]);
 
   return (
     <>
