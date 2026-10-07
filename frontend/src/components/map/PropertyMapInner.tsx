@@ -2,13 +2,13 @@
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Circle, MapContainer, Marker, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, TileLayer } from "react-leaflet";
 
-const exactIcon = L.divIcon({
+const pinIcon = L.divIcon({
   className: "",
   html: `<span class="sf-pin"></span>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
 });
 
 export default function PropertyMapInner({
@@ -24,7 +24,7 @@ export default function PropertyMapInner({
   return (
     <MapContainer
       center={center}
-      zoom={exact ? 15 : 13}
+      zoom={exact ? 15 : 14}
       scrollWheelZoom={false}
       className="h-full w-full"
       attributionControl
@@ -33,16 +33,7 @@ export default function PropertyMapInner({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {exact ? (
-        <Marker position={center} icon={exactIcon} />
-      ) : (
-        // Public listing: show the general area as a circle, not an exact pin.
-        <Circle
-          center={center}
-          radius={900}
-          pathOptions={{ color: "#E8505B", fillColor: "#E8505B", fillOpacity: 0.12, weight: 1.5 }}
-        />
-      )}
+      <Marker position={center} icon={pinIcon} />
     </MapContainer>
   );
 }

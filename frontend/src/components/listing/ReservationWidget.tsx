@@ -8,7 +8,10 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { GuestStepper } from "@/components/GuestStepper";
 import { StarRating } from "@/components/StarRating";
 import { Modal } from "@/components/ui/Modal";
+import { format } from "date-fns";
+
 import { apiSend } from "@/lib/api";
+import { cn } from "@/lib/cn";
 import { formatPrice, formatDateRange, toISODate } from "@/lib/format";
 import { useAuth } from "@/hooks/useAuth";
 import type { BookedRange, ListingDetail, PriceQuote } from "@/types";
@@ -27,8 +30,15 @@ export function ReservationWidget({
   const [quote, setQuote] = useState<PriceQuote | null>(null);
   const [loading, setLoading] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const complete = Boolean(range?.from && range?.to);
+
+  const handleRangeChange = (next: DateRange | undefined) => {
+    setRange(next);
+    // Collapse the calendar once a full range is chosen so the card stays compact.
+    if (next?.from && next?.to) setCalendarOpen(false);
+  };
 
   useEffect(() => {
     if (!range?.from || !range?.to) {
@@ -101,18 +111,30 @@ export function ReservationWidget({
   const controls = (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-xl border border-hairline">
-        <div className="grid grid-cols-2 divide-x divide-hairline border-b border-hairline">
-          <DateField label="Check-in" value={range?.from ? toISODate(range.from) : "Add date"} />
-          <DateField label="Checkout" value={range?.to ? toISODate(range.to) : "Add date"} />
-        </div>
-        <div className="p-2">
-          <DateRangePicker
-            range={range}
-            onChange={setRange}
-            bookedRanges={bookedRanges}
-            numberOfMonths={1}
+        <div className="grid grid-cols-2 divide-x divide-hairline">
+          <DateField
+            label="Check-in"
+            value={range?.from ? format(range.from, "MMM d, yyyy") : "Add date"}
+            active={calendarOpen}
+            onClick={() => setCalendarOpen((o) => !o)}
+          />
+          <DateField
+            label="Checkout"
+            value={range?.to ? format(range.to, "MMM d, yyyy") : "Add date"}
+            active={calendarOpen}
+            onClick={() => setCalendarOpen((o) => !o)}
           />
         </div>
+        {calendarOpen && (
+          <div className="border-t border-hairline p-2">
+            <DateRangePicker
+              range={range}
+              onChange={handleRangeChange}
+              bookedRanges={bookedRanges}
+              numberOfMonths={1}
+            />
+          </div>
+        )}
       </div>
       <div className="rounded-xl border border-hairline p-4">
         <GuestStepper
@@ -189,11 +211,25 @@ export function ReservationWidget({
   );
 }
 
-function DateField({ label, value }: { label: string; value: string }) {
+function DateField({
+  label,
+  value,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div className="px-3 py-2">
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn("px-3 py-2 text-left transition hover:bg-surface", active && "bg-surface")}
+    >
       <p className="text-[10px] font-semibold uppercase tracking-wide">{label}</p>
-      <p className="text-sm text-ink-muted">{value}</p>
-    </div>
+      <p className="text-sm text-ink">{value}</p>
+    </button>
   );
 }

@@ -13,6 +13,8 @@ import { formatDateRange, toISODate } from "@/lib/format";
 
 type Section = "where" | "dates" | "who" | null;
 
+const POPULAR_DESTINATIONS = ["Santorini", "Tokyo", "Tulum", "Lisbon", "Barcelona", "Reykjavik"];
+
 function useInitialState() {
   const params = useSearchParams();
   const ci = params.get("check_in");
@@ -30,7 +32,6 @@ function useInitialState() {
 export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }) {
   const router = useRouter();
   const initial = useInitialState();
-  const [expanded, setExpanded] = useState(false);
   const [section, setSection] = useState<Section>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [location, setLocation] = useState(initial.location);
@@ -40,10 +41,7 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setExpanded(false);
-        setSection(null);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setSection(null);
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -57,7 +55,6 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
       params.set("check_out", toISODate(range.to));
     }
     if (guests > 1) params.set("guests", String(guests));
-    setExpanded(false);
     setSection(null);
     setMobileOpen(false);
     router.push(`/?${params.toString()}`);
@@ -66,8 +63,10 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
   const dateLabel =
     range?.from && range?.to
       ? formatDateRange(toISODate(range.from), toISODate(range.to))
-      : "Any week";
+      : "Add dates";
   const guestLabel = guests > 1 ? `${guests} guests` : "Add guests";
+
+  const active = section !== null;
 
   // --- Mobile compact trigger ---
   const mobileTrigger = (
@@ -78,9 +77,7 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
     >
       <Search className="h-4 w-4 text-ink" />
       <span className="flex flex-col items-start">
-        <span className="text-sm font-semibold text-ink">
-          {location || "Where to?"}
-        </span>
+        <span className="text-sm font-semibold text-ink">{location || "Where to?"}</span>
         <span className="text-xs text-ink-muted">
           {dateLabel} · {guestLabel}
         </span>
@@ -88,106 +85,94 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
     </button>
   );
 
-  const segmentBase =
-    "flex flex-col items-start rounded-full px-6 py-3 text-left transition hover:bg-surface";
+  const segment = "flex flex-col items-start rounded-full px-6 py-2.5 text-left transition";
 
   return (
     <>
       {/* Mobile */}
       <div className={cn("w-full", variant === "compact" && "md:hidden")}>{mobileTrigger}</div>
 
-      {/* Desktop */}
-      <div ref={ref} className="relative hidden md:block">
-        {!expanded ? (
+      {/* Desktop — a prominent, always-visible segmented search bar */}
+      <div ref={ref} className="relative mx-auto hidden w-full md:block">
+        <div
+          className={cn(
+            "flex items-center rounded-full border bg-white transition",
+            active ? "border-hairline bg-surface/60 shadow-card" : "border-hairline shadow-pill hover:shadow-card",
+          )}
+        >
+          {/* Where */}
           <button
             type="button"
-            onClick={() => {
-              setExpanded(true);
-              setSection("where");
-            }}
-            className="flex items-center rounded-full border border-hairline bg-white py-1.5 pl-6 pr-1.5 shadow-pill transition hover:shadow-card"
+            onClick={() => setSection("where")}
+            className={cn(segment, "flex-[1.4]", section === "where" ? "bg-white shadow-soft" : "hover:bg-black/[0.03]")}
           >
-            <span className="px-2 text-sm font-semibold text-ink">{location || "Anywhere"}</span>
-            <span className="h-6 w-px bg-hairline" />
-            <span className="px-4 text-sm font-semibold text-ink">{dateLabel}</span>
-            <span className="h-6 w-px bg-hairline" />
-            <span className="px-4 text-sm text-ink-muted">{guestLabel}</span>
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-brand text-white">
-              <Search className="h-4 w-4" />
-            </span>
+            <span className="text-xs font-semibold text-ink">Where</span>
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onFocus={() => setSection("where")}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
+              placeholder="Search destinations"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-ink-muted"
+            />
           </button>
-        ) : (
-          <div className="flex items-center rounded-full border border-hairline bg-white shadow-card">
-            <button
-              type="button"
-              onClick={() => setSection("where")}
-              className={cn(segmentBase, section === "where" && "bg-surface")}
-            >
-              <span className="text-xs font-semibold text-ink">Where</span>
-              <input
-                autoFocus
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submit()}
-                placeholder="Search destinations"
-                className="w-40 bg-transparent text-sm outline-none placeholder:text-ink-muted"
-              />
-            </button>
-            <span className="h-8 w-px bg-hairline" />
-            <button
-              type="button"
-              onClick={() => setSection("dates")}
-              className={cn(segmentBase, section === "dates" && "bg-surface")}
-            >
-              <span className="text-xs font-semibold text-ink">When</span>
-              <span className="text-sm text-ink-muted">{dateLabel}</span>
-            </button>
-            <span className="h-8 w-px bg-hairline" />
-            <button
-              type="button"
-              onClick={() => setSection("who")}
-              className={cn(segmentBase, "rounded-full", section === "who" && "bg-surface")}
-            >
+          <span className="h-9 w-px bg-hairline" />
+          {/* Check in */}
+          <button
+            type="button"
+            onClick={() => setSection("dates")}
+            className={cn(segment, "flex-1", section === "dates" ? "bg-white shadow-soft" : "hover:bg-black/[0.03]")}
+          >
+            <span className="text-xs font-semibold text-ink">When</span>
+            <span className={cn("truncate text-sm", range?.from ? "text-ink" : "text-ink-muted")}>{dateLabel}</span>
+          </button>
+          <span className="h-9 w-px bg-hairline" />
+          {/* Who + search */}
+          <div className={cn("flex flex-1 items-center justify-between rounded-full pr-2", section === "who" && "bg-white shadow-soft")}>
+            <button type="button" onClick={() => setSection("who")} className={cn(segment, "flex-1")}>
               <span className="text-xs font-semibold text-ink">Who</span>
-              <span className="text-sm text-ink-muted">{guestLabel}</span>
+              <span className={cn("truncate text-sm", guests > 1 ? "text-ink" : "text-ink-muted")}>{guestLabel}</span>
             </button>
             <button
               type="button"
               onClick={submit}
-              className="m-1.5 ml-0 flex items-center gap-2 rounded-full bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark"
+              className="flex items-center gap-2 rounded-full bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark"
             >
               <Search className="h-4 w-4" />
-              <span className="text-sm">Search</span>
+              {active && <span className="text-sm">Search</span>}
             </button>
           </div>
-        )}
+        </div>
 
-        {/* Desktop panels */}
-        {expanded && section && (
-          <div
-            className={cn(
-              "absolute left-1/2 top-full z-50 mt-3 -translate-x-1/2 rounded-3xl border border-divider bg-white p-6 shadow-card",
-              section === "dates" ? "w-auto" : "w-80",
-            )}
-          >
-            {section === "where" && (
-              <div>
-                <p className="mb-3 text-sm font-semibold">Search by destination</p>
-                <input
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submit()}
-                  placeholder="Try 'Santorini' or 'Tokyo'"
-                  className="w-full rounded-lg border border-hairline px-4 py-3 text-sm outline-none focus:border-ink"
-                />
-              </div>
-            )}
-            {section === "dates" && (
-              <DateRangePicker range={range} onChange={setRange} numberOfMonths={2} />
-            )}
-            {section === "who" && (
-              <GuestStepper value={guests} onChange={setGuests} label="Guests" max={16} />
-            )}
+        {/* Popovers */}
+        {section === "where" && (
+          <div className="absolute left-0 top-full z-50 mt-3 w-80 rounded-3xl border border-divider bg-white p-6 shadow-card">
+            <p className="mb-3 text-sm font-semibold">Popular destinations</p>
+            <div className="flex flex-wrap gap-2">
+              {POPULAR_DESTINATIONS.map((dest) => (
+                <button
+                  key={dest}
+                  type="button"
+                  onClick={() => {
+                    setLocation(dest);
+                    setSection("dates");
+                  }}
+                  className="rounded-full border border-hairline px-4 py-2 text-sm transition hover:border-ink"
+                >
+                  {dest}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {section === "dates" && (
+          <div className="absolute left-1/2 top-full z-50 mt-3 -translate-x-1/2 rounded-3xl border border-divider bg-white p-6 shadow-card">
+            <DateRangePicker range={range} onChange={setRange} numberOfMonths={2} />
+          </div>
+        )}
+        {section === "who" && (
+          <div className="absolute right-0 top-full z-50 mt-3 w-80 rounded-3xl border border-divider bg-white p-6 shadow-card">
+            <GuestStepper value={guests} onChange={setGuests} label="Guests" max={16} />
           </div>
         )}
       </div>

@@ -17,20 +17,20 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-divider bg-white">
       <Container size="wide">
-        <div className="flex h-16 items-center justify-between gap-4 md:h-20">
-          <div className="flex-shrink-0">
+        <div className="flex h-16 items-center gap-4 md:h-20">
+          <div className="flex flex-1 items-center">
             <Logo />
           </div>
 
-          <div className="hidden flex-1 justify-center md:flex">
-            {showSearch && (
-              <Suspense fallback={<div className="h-12 w-80 rounded-full border border-hairline" />}>
+          {showSearch && (
+            <div className="hidden w-full max-w-[680px] flex-shrink-0 md:block xl:max-w-[820px]">
+              <Suspense fallback={<div className="mx-auto h-14 w-full rounded-full border border-hairline" />}>
                 <SearchBar />
               </Suspense>
-            )}
-          </div>
+            </div>
+          )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center justify-end gap-2">
             <Link
               href="/host"
               className="hidden rounded-full px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-surface lg:block"

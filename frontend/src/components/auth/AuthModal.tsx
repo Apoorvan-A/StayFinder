@@ -50,22 +50,18 @@ export function AuthModal() {
           </p>
         </div>
 
-        {googleClientId ? (
-          <div className="flex justify-center">
-            <GoogleSignInButton clientId={googleClientId} onCredential={handleGoogle} />
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-hairline px-4 py-3 text-center text-sm text-ink-muted">
-            Google sign-in isn&apos;t configured on this server. Use a demo account below to
-            explore the full experience.
-          </div>
+        {googleClientId && (
+          <>
+            <div className="flex justify-center">
+              <GoogleSignInButton clientId={googleClientId} onCredential={handleGoogle} />
+            </div>
+            <div className="my-5 flex items-center gap-3 text-xs text-ink-muted">
+              <span className="h-px flex-1 bg-divider" />
+              or continue instantly
+              <span className="h-px flex-1 bg-divider" />
+            </div>
+          </>
         )}
-
-        <div className="my-5 flex items-center gap-3 text-xs text-ink-muted">
-          <span className="h-px flex-1 bg-divider" />
-          or continue instantly
-          <span className="h-px flex-1 bg-divider" />
-        </div>
 
         <div className="space-y-3">
           <DemoOption

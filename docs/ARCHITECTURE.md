@@ -53,8 +53,9 @@ of anything supplied in the request body.
 - **Google Maps** — an external *directions* link (`maps/dir/?...`) on confirmed reservations;
   no API key and no exact location on the public listing.
 - **Leaflet + OpenStreetMap** — interactive maps (no API key), loaded client-only via dynamic
-  import: a price-marker results map (desktop split view / mobile fullscreen), an approximate
-  *circle* on the public listing, and an exact pin on a confirmed reservation.
+  import: a price-marker results map (desktop split view / mobile fullscreen), a location pin on
+  the public listing (approximate city coordinates, no exact address shown), and the exact pin
+  on a confirmed reservation.
 
 ## Messaging
 Persisted in-app messaging (`conversations` + `messages`) between a guest and a host about a
