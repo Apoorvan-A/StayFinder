@@ -62,6 +62,24 @@ Persisted in-app messaging (`conversations` + `messages`) between a guest and a 
 listing. No real-time infrastructure — threads are fetched and posted over plain REST, and the
 backend authorizes every read/write to the thread's two participants.
 
+## AI Concierge
+```
+Browser → POST /api/concierge → LLM provider (optional) → structured SearchIntent
+        → validation + grounding → existing listing search service → SQLite
+```
+The LLM only produces a candidate `SearchIntent`; the backend validates/grounds it and runs the
+real, availability-aware search, so results are always real inventory. With no AI key a
+deterministic parser is used. No queue, no vector DB, no persisted chat history.
+
+## Transactional email
+```
+Booking service → DB commit (reservation confirmed) → email service → email provider (Resend)
+```
+Email is a best-effort step **after** the booking commits; failure never rolls back the booking.
+Idempotency is tracked on the booking row; recipient is the authenticated user; demo accounts are
+skipped. Unconfigured locally → delivery skipped. No background worker — a single synchronous,
+best-effort call.
+
 ## Deployment
 - Frontend → Vercel (`NEXT_PUBLIC_API_URL` → backend).
 - Backend → Render (persistent disk for the SQLite file; seeded on first boot).

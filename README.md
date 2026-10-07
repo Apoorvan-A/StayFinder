@@ -31,6 +31,8 @@ demo host** (Sofia Ramos) to start instantly.
   live result count
 - **Map view**: a desktop split view (results + interactive price-marker map that highlights
   the hovered/selected card) and a mobile fullscreen map
+- **AI Concierge**: describe a stay in plain language ("beachfront villa in Greece for 4 with
+  a pool") and get real matching listings, with a "View all" that feeds the normal search
 - Pagination via "show more"
 - Listing detail: hero gallery + photo modal, amenities, **Meet your host**,
   **Where you'll be** (approximate area only), reviews, and **Things to know** (house rules,
@@ -181,6 +183,41 @@ favoriting, trips and hosting prompt a sign-in modal, preserving the intended ac
 
 ---
 
+## AI Concierge
+
+Natural-language stay discovery over **real** inventory, not a generic chatbot:
+
+```
+message → LLM intent parser → structured SearchIntent → backend validation
+        → existing listing search service → real listings → clickable results
+```
+
+The model only converts text into a structured `SearchIntent`; the backend validates it,
+grounds it in the real inventory vocabulary, and runs the **existing availability-aware search**
+— so it can never invent listings, prices, availability or amenities. Results are clickable,
+and "View all" opens the normal Explore page with the interpreted filters applied.
+
+The LLM provider is configured via env (`AI_PROVIDER`/`AI_API_KEY`/`AI_MODEL`). **With no key,
+a built-in deterministic parser handles common phrases** (location, budget, guests, type,
+category, amenities), so the concierge — and the whole app — works with zero AI setup. All
+model calls are server-side; no secret is ever exposed to the browser.
+
+## Transactional email
+
+Booking and cancellation confirmation emails are sent to the authenticated user's **verified
+email**, from StayFinder's own provider (Resend) — **never through the user's Gmail** and never
+using Gmail send scopes. Key properties:
+
+- **Booking success never depends on email** — the reservation is committed first; email is a
+  best-effort step whose failure is logged and swallowed.
+- **Idempotent** — `confirmation_email_sent_at` / `cancellation_email_sent_at` prevent duplicate
+  sends on retries/refreshes.
+- **Recipient is backend-controlled** (the session user), never a request-body address.
+- **Demo accounts are skipped**, so the demo never emails strangers.
+- Links use `FRONTEND_URL`. Delivery is optional locally (unconfigured → skipped).
+
+---
+
 ## Repository structure
 
 ```
@@ -247,6 +284,9 @@ App at `http://localhost:3000`.
 - `SESSION_SECRET` — secret used to sign session cookies (set a strong value in production)
 - `COOKIE_SECURE` / `COOKIE_SAMESITE` — `1` / `none` for a cross-site HTTPS deployment, else `0` / `lax`
 - `GOOGLE_CLIENT_ID` — Google OAuth web client id (blank disables Google sign-in; demo access still works)
+- `FRONTEND_URL` — public origin used for links in emails
+- `AI_PROVIDER` / `AI_API_KEY` / `AI_MODEL` — optional; blank → deterministic concierge parser
+- `EMAIL_PROVIDER` / `EMAIL_API_KEY` / `EMAIL_FROM` — optional; blank → email delivery skipped
 
 **Frontend** (`frontend/.env.local`)
 - `NEXT_PUBLIC_API_URL` — base URL of the backend (the Google client id is served by the backend)
@@ -271,7 +311,7 @@ Never commit the client id or any secret.
 ## Tests
 
 ```bash
-cd backend && pytest        # 63 tests: booking matrix, ownership, favorites, host CRUD, auth, messaging
+cd backend && pytest        # 79 tests: booking matrix, ownership, favorites, host CRUD, auth, messaging, concierge, email
 cd frontend && npm run build && npm run lint   # type-safe production build + lint
 ```
 
@@ -346,3 +386,7 @@ is used so bookings survive restarts.
   already modeled via `booking_id`).
 - Messaging and identity verification are intentionally out of scope.
 - A production deployment would move to Postgres; the auth layer is already real.
+- The AI Concierge and transactional email are implementation-ready; live LLM and live email
+  delivery require provider keys (and, for emails to real inboxes, Google sign-in for a verified
+  recipient and a verified sender domain) configured after deployment. Locally both degrade
+  gracefully (deterministic parser / skipped delivery).
