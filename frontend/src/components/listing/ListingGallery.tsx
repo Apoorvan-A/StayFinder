@@ -31,6 +31,7 @@ export function ListingGallery({ images, title }: { images: ListingImage[]; titl
               key={img.id}
               type="button"
               onClick={() => setOpen(true)}
+              aria-label={`View photos of ${title}`}
               className={cn(
                 "group relative overflow-hidden",
                 i === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1",
