@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { House, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
@@ -29,7 +29,7 @@ function useInitialState() {
   };
 }
 
-export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }) {
+export function SearchBar({ variant = "full", compact = false }: { variant?: "full" | "compact"; compact?: boolean }) {
   const router = useRouter();
   const initial = useInitialState();
   const [section, setSection] = useState<Section>(null);
@@ -37,7 +37,12 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
   const [location, setLocation] = useState(initial.location);
   const [range, setRange] = useState<DateRange | undefined>(initial.range);
   const [guests, setGuests] = useState(initial.guests);
+  const [expandedFromCompact, setExpandedFromCompact] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const destinationInputRef = useRef<HTMLInputElement>(null);
+  const datesButtonRef = useRef<HTMLButtonElement>(null);
+  const guestsButtonRef = useRef<HTMLButtonElement>(null);
+  const showCompact = variant === "full" && compact && !expandedFromCompact;
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -46,6 +51,21 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  useEffect(() => {
+    if (!compact) setExpandedFromCompact(false);
+    else if (!expandedFromCompact) setSection(null);
+  }, [compact, expandedFromCompact]);
+
+  useEffect(() => {
+    if (!compact || !expandedFromCompact || !section) return;
+    const frame = window.requestAnimationFrame(() => {
+      if (section === "where") destinationInputRef.current?.focus();
+      if (section === "dates") datesButtonRef.current?.focus();
+      if (section === "who") guestsButtonRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [compact, expandedFromCompact, section]);
 
   const submit = () => {
     const params = new URLSearchParams();
@@ -92,8 +112,17 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
       {/* Mobile + tablet compact trigger */}
       <div className={cn("w-full", variant === "compact" && "lg:hidden")}>{mobileTrigger}</div>
 
-      {/* Desktop (lg+) — a prominent, always-visible segmented search bar */}
-      <div ref={ref} className="relative mx-auto hidden w-full lg:block">
+      {/* Desktop search keeps the same state in both presentations. */}
+      <div ref={ref} className="relative mx-auto hidden min-h-14 w-full lg:block">
+        <div
+          className={cn(
+            "absolute inset-x-0 top-0 mx-auto w-full transition-all duration-300 motion-reduce:transition-none",
+            showCompact
+              ? "invisible pointer-events-none max-w-[500px] -translate-y-2 scale-[0.98] opacity-0"
+              : "max-w-full translate-y-0 scale-100 opacity-100",
+          )}
+          aria-hidden={showCompact}
+        >
         <div
           className={cn(
             "flex items-center rounded-full border bg-white transition",
@@ -108,6 +137,7 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
           >
             <span className="text-xs font-semibold text-ink">Where</span>
             <input
+              ref={destinationInputRef}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               onFocus={() => setSection("where")}
@@ -119,6 +149,7 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
           <span className="h-9 w-px bg-hairline" />
           {/* Check in */}
           <button
+            ref={datesButtonRef}
             type="button"
             onClick={() => setSection("dates")}
             className={cn(segment, "flex-1", section === "dates" ? "bg-white shadow-soft" : "hover:bg-black/[0.03]")}
@@ -129,7 +160,7 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
           <span className="h-9 w-px bg-hairline" />
           {/* Who + search */}
           <div className={cn("flex flex-1 items-center justify-between rounded-full pr-2", section === "who" && "bg-white shadow-soft")}>
-            <button type="button" onClick={() => setSection("who")} className={cn(segment, "flex-1")}>
+            <button ref={guestsButtonRef} type="button" onClick={() => setSection("who")} className={cn(segment, "flex-1")}>
               <span className="text-xs font-semibold text-ink">Who</span>
               <span className={cn("truncate text-sm", guests > 1 ? "text-ink" : "text-ink-muted")}>{guestLabel}</span>
             </button>
@@ -175,6 +206,55 @@ export function SearchBar({ variant = "full" }: { variant?: "full" | "compact" }
             <GuestStepper value={guests} onChange={setGuests} label="Guests" max={16} />
           </div>
         )}
+        </div>
+
+        <div
+          className={cn(
+            "absolute inset-x-0 top-0 mx-auto w-full max-w-[500px] transition-all duration-300 motion-reduce:transition-none",
+            showCompact
+              ? "relative translate-y-0 scale-100 opacity-100"
+              : "invisible pointer-events-none -translate-y-2 scale-[0.98] opacity-0",
+          )}
+          aria-hidden={!showCompact}
+        >
+          <div className="flex h-14 items-center rounded-full border border-hairline bg-white px-2 shadow-card">
+            <button
+              type="button"
+              aria-label={`Change destination: ${location || "Anywhere"}`}
+              onClick={() => { setExpandedFromCompact(true); setSection("where"); }}
+              className="flex min-w-0 flex-[1.1] items-center gap-2 rounded-full px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface"
+            >
+              <House className="h-4 w-4 flex-shrink-0 text-ink-muted" />
+              <span className="truncate">{location || "Anywhere"}</span>
+            </button>
+            <span className="h-6 w-px bg-hairline" />
+            <button
+              type="button"
+              aria-label={`Change dates: ${range?.from && range?.to ? dateLabel : "Anytime"}`}
+              onClick={() => { setExpandedFromCompact(true); setSection("dates"); }}
+              className="min-w-0 flex-1 truncate rounded-full px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface"
+            >
+              {range?.from && range?.to ? dateLabel : "Anytime"}
+            </button>
+            <span className="h-6 w-px bg-hairline" />
+            <button
+              type="button"
+              aria-label={`Change guests: ${guestLabel}`}
+              onClick={() => { setExpandedFromCompact(true); setSection("who"); }}
+              className="min-w-0 flex-1 truncate rounded-full px-3 py-2 text-left text-sm font-medium text-ink transition hover:bg-surface"
+            >
+              {guestLabel}
+            </button>
+            <button
+              type="button"
+              aria-label="Expand full search"
+              onClick={() => { setExpandedFromCompact(true); setSection("where"); }}
+              className="ml-1 grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition hover:bg-brand-dark"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Mobile sheet */}

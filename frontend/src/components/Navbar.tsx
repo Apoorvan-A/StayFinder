@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
 import { Logo } from "@/components/Logo";
@@ -11,8 +11,32 @@ import { Container } from "@/components/ui/Container";
 
 export function Navbar() {
   const pathname = usePathname();
+  const [searchCompact, setSearchCompact] = useState(false);
   // The expandable search belongs on the explore/home experience.
   const showSearch = pathname === "/";
+
+  useEffect(() => {
+    let frame = 0;
+    let compact = false;
+    const update = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const y = window.scrollY;
+        const nextCompact = compact ? y > 48 : y > 112;
+        if (nextCompact !== compact) {
+          compact = nextCompact;
+          setSearchCompact(nextCompact);
+        }
+      });
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", update);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-divider bg-white">
@@ -23,9 +47,9 @@ export function Navbar() {
           </div>
 
           {showSearch && (
-            <div className="hidden w-full max-w-[640px] flex-shrink-0 lg:block xl:max-w-[820px]">
+            <div className="hidden w-full max-w-[560px] flex-shrink-0 lg:block xl:max-w-[820px]">
               <Suspense fallback={<div className="mx-auto h-14 w-full rounded-full border border-hairline" />}>
-                <SearchBar />
+                <SearchBar compact={searchCompact} />
               </Suspense>
             </div>
           )}
