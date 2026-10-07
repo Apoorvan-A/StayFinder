@@ -1,4 +1,5 @@
 from functools import lru_cache
+from urllib.parse import urlsplit
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -36,6 +37,27 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def uses_cross_site_https_frontend(self) -> bool:
+        """Cross-site browser cookies need Secure + SameSite=None for HTTPS frontends."""
+        local_hosts = {"localhost", "127.0.0.1", "::1"}
+        return any(
+            parsed.scheme == "https"
+            and parsed.hostname is not None
+            and parsed.hostname.lower() not in local_hosts
+            for parsed in (urlsplit(origin) for origin in self.cors_origin_list)
+        )
+
+    @property
+    def session_cookie_secure(self) -> bool:
+        # Keep local HTTP development unchanged; external HTTPS CORS origins require Secure.
+        return self.cookie_secure or self.uses_cross_site_https_frontend
+
+    @property
+    def session_cookie_samesite(self) -> str:
+        # SameSite=Lax cookies are omitted on cross-site fetches from Vercel to Railway.
+        return "none" if self.uses_cross_site_https_frontend else self.cookie_samesite
 
 
 @lru_cache

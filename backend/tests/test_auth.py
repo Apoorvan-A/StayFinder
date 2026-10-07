@@ -1,3 +1,4 @@
+from app.config import Settings
 from app.models import User, UserRole
 from app.services import auth_service
 from app.services.auth_service import DEMO_GUEST_EMAIL
@@ -23,6 +24,34 @@ def test_demo_login_sets_session(client, seeded):
     me = client.get("/api/auth/me")
     assert me.status_code == 200
     assert me.json()["role"] == "host"
+
+
+def test_session_cookie_uses_cross_site_attributes_for_production_origin(client, seeded, monkeypatch):
+    from app.deps import settings
+
+    monkeypatch.setattr(settings, "cors_origins", "https://stay-finder-alpha-neon.vercel.app")
+
+    login = client.post("/api/auth/demo", json={"role": "guest"})
+    set_cookie = login.headers["set-cookie"].lower()
+    assert "httponly" in set_cookie
+    assert "secure" in set_cookie
+    assert "samesite=none" in set_cookie
+    assert "path=/" in set_cookie
+    assert "domain=" not in set_cookie
+
+    logout = client.post("/api/auth/logout")
+    clear_cookie = logout.headers["set-cookie"].lower()
+    assert "secure" in clear_cookie
+    assert "samesite=none" in clear_cookie
+    assert "path=/" in clear_cookie
+    assert "domain=" not in clear_cookie
+
+
+def test_session_cookie_keeps_local_development_defaults():
+    settings = Settings(cors_origins="http://localhost:3000")
+
+    assert not settings.session_cookie_secure
+    assert settings.session_cookie_samesite == "lax"
 
 
 def test_logout_clears_session(client, seeded):
