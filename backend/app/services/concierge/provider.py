@@ -14,7 +14,7 @@ import httpx
 
 from app.config import get_settings
 
-DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
 
 # JSON schema describing the fields the model may fill. Kept in sync with SearchIntent.
 INTENT_SCHEMA = {
