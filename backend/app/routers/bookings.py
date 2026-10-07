@@ -14,6 +14,7 @@ from app.schemas.message import ConversationDetail, MessageCreate, MessageOut
 from app.schemas.user import UserPublic
 from app.serializers import to_card
 from app.services import booking_service, messaging_service
+from app.services.email import service as email_service
 from app.services.listing_service import favorited_listing_ids
 from app.services.pricing import nights_between
 
@@ -49,6 +50,12 @@ def create_booking(payload: BookingCreate, db: DbSession, user: CurrentUser) -> 
         check_out=payload.check_out,
         guests=payload.guests,
     )
+    # Best-effort transactional email — the booking is already committed; delivery never
+    # affects the response (the email service also swallows its own errors).
+    try:
+        email_service.send_booking_confirmation(db, booking)
+    except Exception:  # noqa: BLE001
+        pass
     return BookingOut.model_validate(booking)
 
 
@@ -89,6 +96,11 @@ def booking_detail(booking_id: int, db: DbSession, user: CurrentUser) -> TripDet
 @router.post("/bookings/{booking_id}/cancel", response_model=BookingOut)
 def cancel_booking(booking_id: int, db: DbSession, user: CurrentUser) -> BookingOut:
     booking = booking_service.cancel_booking(db, booking_id=booking_id, user_id=user.id)
+    if booking.status == BookingStatus.CANCELLED:
+        try:
+            email_service.send_booking_cancellation(db, booking)
+        except Exception:  # noqa: BLE001
+            pass
     return BookingOut.model_validate(booking)
 
 

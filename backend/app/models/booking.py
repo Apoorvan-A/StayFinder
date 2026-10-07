@@ -64,6 +64,10 @@ class Booking(Base):
 
     confirmation_code: Mapped[str] = mapped_column(String(12), unique=True, nullable=False)
 
+    # Transactional-email idempotency — set once a confirmation/cancellation email is sent.
+    confirmation_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime)
+    cancellation_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
