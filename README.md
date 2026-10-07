@@ -14,11 +14,11 @@ Built with **Next.js (TypeScript)** and **FastAPI (Python)** over **SQLite**.
 
 ## Live demo
 
-- **App:** _add deployed URL_
-- **API docs:** _add deployed API URL_ `/docs`
+_Not yet deployed — the hosted URLs will be added here after deployment._ Run it locally in
+a few minutes using [Running locally](#running-locally); no sign-up or API keys are needed.
 
-Pick a demo identity from the avatar menu (top-right): **Alex Morgan** (guest),
-**Sofia Ramos** and **Daniel Kim** (hosts). No sign-up required.
+From the account menu, choose **Explore as a demo guest** (Alex Morgan) or **Explore as a
+demo host** (Sofia Ramos) to start instantly.
 
 ---
 
@@ -198,9 +198,12 @@ Open the account menu (or any sign-in prompt) and choose **Explore as a demo gue
 
 | Identity | Role | Notes |
 |----------|------|-------|
-| Alex Morgan | Demo guest | Seeded upcoming, past and cancelled trips + a wishlist |
-| Sofia Ramos | Demo host (Superhost) | Owns ~16 listings with reservations and reviews |
-| Daniel Kim | Demo host (Superhost) | Owns the remaining listings |
+| Alex Morgan | Demo guest | Seeded upcoming, past and cancelled trips, a wishlist, and host conversations |
+| Sofia Ramos | Demo host (Superhost) | Owns ~6 listings with reservations, reviews and messages |
+| Daniel Kim | Demo host (Superhost) | Owns ~6 listings |
+
+Listings are distributed across **six** seeded hosts so no single host owns the whole
+marketplace; the two demo hosts above have enough data to make the dashboard meaningful.
 
 ---
 
@@ -332,7 +335,9 @@ is used so bookings survive restarts.
 - **Integer cents** everywhere to avoid floating-point money bugs.
 - **Server-authoritative pricing & availability:** the client never computes totals; the
   backend recomputes and re-checks inside the booking transaction.
-- **Images:** curated royalty-free Unsplash URLs; the UI degrades gracefully if one fails.
+- **Images:** curated royalty-free Unsplash URLs, served **unoptimized** for reliability (the
+  on-demand optimizer can hiccup on concurrent remote fetches); a `SafeImage` wrapper degrades
+  to a placeholder if one fails. Production would front images with object storage + a CDN.
 - **Map:** a lightweight embedded OpenStreetMap view (no API key), per the assignment's
   "static/basic map is fine".
 

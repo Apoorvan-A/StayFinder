@@ -40,3 +40,6 @@ Thumbs.db
 dist/
 coverage/
 .turbo/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
