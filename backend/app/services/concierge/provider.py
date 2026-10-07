@@ -8,6 +8,7 @@ the app has no provider-specific coupling, and so tests can mock it.
 
 from __future__ import annotations
 
+import logging
 from typing import Protocol
 
 import httpx
@@ -15,6 +16,7 @@ import httpx
 from app.config import get_settings
 
 DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+logger = logging.getLogger(__name__)
 
 # JSON schema describing the fields the model may fill. Kept in sync with SearchIntent.
 INTENT_SCHEMA = {
@@ -55,24 +57,34 @@ class GeminiProvider:
         self._api_key = api_key
         self._model = model
 
+    @property
+    def model(self) -> str:
+        return self._model
+
     def extract_intent(self, message: str) -> dict:
         import json
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self._model}:generateContent"
         resp = httpx.post(
             url,
-            params={"key": self._api_key},
-            headers={"content-type": "application/json"},
+            headers={
+                "content-type": "application/json",
+                "x-goog-api-key": self._api_key,
+            },
             json={
                 "systemInstruction": {"parts": [{"text": _SYSTEM}]},
                 "contents": [{"role": "user", "parts": [{"text": message[:500]}]}],
                 "generationConfig": {
                     "responseMimeType": "application/json",
                     "responseSchema": INTENT_SCHEMA,
-                    "temperature": 0,
                 },
             },
             timeout=15,
+        )
+        logger.info(
+            "concierge provider=gemini model=%s event=http_response status=%s",
+            self._model,
+            resp.status_code,
         )
         resp.raise_for_status()
         data = resp.json()

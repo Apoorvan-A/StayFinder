@@ -52,6 +52,31 @@ def test_concierge_price_sort(client, seeded):
     assert body["intent"]["location"] == "Lisbon"
 
 
+def test_concierge_unknown_explicit_location_returns_no_results(client, seeded, monkeypatch):
+    monkeypatch.setattr(concierge_service, "get_provider", lambda: None)
+
+    body = _ask(client, "do you have any properties in India").json()
+
+    assert body["intent"]["location"] == "India"
+    assert body["total"] == 0
+    assert body["listings"] == []
+    assert "No stays matched" in body["interpretation"]
+
+
+def test_concierge_greece_prompt_parses_filters_without_inventing_inventory(client, seeded, monkeypatch):
+    monkeypatch.setattr(concierge_service, "get_provider", lambda: None)
+
+    body = _ask(client, "beachfront villa in Greece for 4 with a pool").json()
+
+    assert body["intent"]["location"] == "Greece"
+    assert body["intent"]["property_type"] == "Villa"
+    assert body["intent"]["category"] == "Beachfront"
+    assert body["intent"]["guests"] == 4
+    assert "Pool" in body["intent"]["amenities"]
+    assert body["total"] == 0
+    assert body["listings"] == []
+
+
 def test_concierge_uses_llm_provider_and_respects_availability(client, seeded, monkeypatch):
     # Simulate a configured LLM returning structured intent with dates.
     def iso(n):
@@ -87,3 +112,42 @@ def test_concierge_falls_back_when_provider_errors(client, seeded, monkeypatch):
     body = _ask(client, "villa in Lisbon").json()
     assert body["intent"]["location"] == "Lisbon"
     assert body["total"] == 1
+
+
+def test_gemini_provider_uses_supported_generate_content_request(monkeypatch, caplog):
+    import logging
+
+    from app.services.concierge.provider import GeminiProvider, INTENT_SCHEMA, _SYSTEM
+
+    captured = {}
+
+    class Response:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"candidates": [{"content": {"parts": [{"text": '{"location":"India"}'}]}}]}
+
+    def fake_post(url, **kwargs):
+        captured["url"] = url
+        captured.update(kwargs)
+        return Response()
+
+    monkeypatch.setattr("httpx.post", fake_post)
+    provider = GeminiProvider("test-key", "gemini-3.8-flash")
+    caplog.set_level(logging.INFO)
+
+    assert provider.extract_intent("do you have any properties in india") == {"location": "India"}
+    assert captured["url"].endswith("/v1beta/models/gemini-3.8-flash:generateContent")
+    assert captured["headers"]["x-goog-api-key"] == "test-key"
+    assert "key" not in captured
+    assert captured["json"]["systemInstruction"]["parts"][0]["text"] == _SYSTEM
+    assert captured["json"]["contents"][0]["parts"][0]["text"] == "do you have any properties in india"
+    config = captured["json"]["generationConfig"]
+    assert config["responseMimeType"] == "application/json"
+    assert config["responseSchema"] == INTENT_SCHEMA
+    assert "temperature" not in config
+    assert "event=http_response status=200" in caplog.text
+    assert "test-key" not in caplog.text

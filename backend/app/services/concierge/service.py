@@ -7,20 +7,26 @@ so every listing shown is real and availability-aware.
 
 from __future__ import annotations
 
+import json
+import logging
 from urllib.parse import urlencode
 
+import httpx
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.models import Amenity, Listing
 from app.schemas.concierge import ConciergeResponse, SearchIntent
 from app.serializers import to_cards
 from app.services.concierge import fallback
-from app.services.concierge.provider import get_provider
+from app.services.concierge.provider import DEFAULT_GEMINI_MODEL, GeminiProvider, get_provider
 from app.services.listing_service import ListingQuery, search_listings
 
 _CONCIERGE_LIMIT = 6
 _ALLOWED_SORT = {"recommended", "price_asc", "price_desc", "rating"}
+logger = logging.getLogger(__name__)
 
 
 def _vocab(db: Session) -> dict[str, list[str]]:
@@ -36,14 +42,57 @@ def _vocab(db: Session) -> dict[str, list[str]]:
 
 def _parse(db: Session, message: str, vocab: dict[str, list[str]]) -> SearchIntent:
     provider = get_provider()
-    if provider is not None:
-        try:
-            raw = provider.extract_intent(message)
-            if isinstance(raw, dict):
-                allowed = set(SearchIntent.model_fields)
-                return SearchIntent(**{k: v for k, v in raw.items() if k in allowed})
-        except Exception:  # noqa: BLE001 — any provider/validation failure → deterministic fallback
-            pass
+    settings = get_settings()
+    if provider is None:
+        reason = "missing_api_key" if settings.ai_provider.lower() == "gemini" else "provider_unconfigured"
+        logger.info(
+            "concierge provider=gemini model=%s outcome=fallback reason=%s",
+            settings.ai_model or DEFAULT_GEMINI_MODEL,
+            reason,
+        )
+        return fallback.parse(message, **vocab)
+
+    model = provider.model if isinstance(provider, GeminiProvider) else settings.ai_model or DEFAULT_GEMINI_MODEL
+    try:
+        raw = provider.extract_intent(message)
+        if not isinstance(raw, dict):
+            raise ValueError("Provider response was not a JSON object")
+        allowed = set(SearchIntent.model_fields)
+        intent = SearchIntent(**{k: v for k, v in raw.items() if k in allowed})
+        logger.info(
+            "concierge provider=gemini model=%s outcome=succeeded intent=%s",
+            model,
+            json.dumps(intent.model_dump(mode="json"), sort_keys=True),
+        )
+        return intent
+    except Exception as exc:  # noqa: BLE001 — provider/validation failures use deterministic fallback
+        status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
+        if isinstance(exc, httpx.HTTPStatusError):
+            category = "http_error"
+        elif isinstance(exc, httpx.TimeoutException):
+            category = "timeout"
+        elif isinstance(exc, httpx.RequestError):
+            category = "transport_error"
+        elif isinstance(exc, json.JSONDecodeError):
+            category = "malformed_json"
+        elif isinstance(exc, ValidationError):
+            category = "schema_validation"
+        elif isinstance(exc, (KeyError, IndexError, TypeError, ValueError)):
+            category = "malformed_response"
+        else:
+            category = "unexpected_error"
+        logger.warning(
+            "concierge provider=gemini model=%s outcome=failed category=%s status=%s error_type=%s",
+            model,
+            category,
+            status,
+            type(exc).__name__,
+        )
+        logger.info(
+            "concierge provider=gemini model=%s outcome=fallback reason=provider_failure category=%s",
+            model,
+            category,
+        )
     return fallback.parse(message, **vocab)
 
 

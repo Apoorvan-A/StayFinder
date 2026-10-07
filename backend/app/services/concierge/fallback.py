@@ -52,6 +52,16 @@ _AMENITY_KEYWORDS = {
     "workspace": "Workspace",
 }
 
+_VAGUE_LOCATIONS = {
+    "anywhere",
+    "beach",
+    "city",
+    "countryside",
+    "mountains",
+    "nature",
+    "somewhere",
+}
+
 
 def _match_vocab(text: str, vocab: list[str]) -> str | None:
     """Return the longest vocabulary entry that appears as a word/phrase in text."""
@@ -61,6 +71,21 @@ def _match_vocab(text: str, vocab: list[str]) -> str | None:
             if best is None or len(item) > len(best):
                 best = item
     return best
+
+
+def _explicit_location(text: str) -> str | None:
+    """Retain a destination explicitly named by the user, even outside current inventory."""
+    match = re.search(
+        r"\b(?:in|near|around)\s+(?:the\s+)?([a-z][a-z\s.'-]{0,39}?)"
+        r"(?=\s+(?:for|with|under|below|up to|over|above|and|during|between)\b|[,.!?;]|$)",
+        text,
+    )
+    if not match:
+        return None
+    location = re.sub(r"\s+", " ", match.group(1)).strip(" .'-")
+    if not location or location.lower() in _VAGUE_LOCATIONS:
+        return None
+    return location.title()
 
 
 def parse(
@@ -76,7 +101,11 @@ def parse(
     intent = SearchIntent()
 
     # Location — prefer a city match, else a country.
-    intent.location = _match_vocab(text, cities) or _match_vocab(text, countries)
+    intent.location = (
+        _match_vocab(text, cities)
+        or _match_vocab(text, countries)
+        or _explicit_location(message.lower())
+    )
 
     # Price
     m = re.search(r"(?:under|below|less than|up to|max(?:imum)?)\s*\$?\s*(\d{2,6})", text)
