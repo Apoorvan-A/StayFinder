@@ -46,3 +46,7 @@ a cancelled reservation hides the address again.
 - `next build` + `tsc --noEmit` + `eslint` must pass clean.
 - Manual critical-flow verification in a real browser (search → book → trip; favorite; host CRUD).
 - Optional Playwright for Flow A (browse→book→confirmation→trips) if time allows.
+
+## Current release verification
+
+On October 7, 2026, the full backend suite passed **100 tests**, including 15 file-backed SQLite concurrency cases and guest-to-host API role enforcement. Frontend lint, typecheck, and production build passed. See [QA_REPORT.md](QA_REPORT.md) for production API results and skipped browser checks. There is no Playwright suite.

@@ -1,3 +1,28 @@
+# Current Production Release — October 7, 2026
+
+This section supersedes the historical deployment handoff below. Current repository and production behavior are authoritative.
+
+- Public repository: https://github.com/Apoorvan-A/StayFinder; branch `master`.
+- Frontend: https://stay-finder-alpha-neon.vercel.app — Vercel.
+- Backend: https://stayfinder-api-production-5645.up.railway.app — Railway.
+- API docs: https://stayfinder-api-production-5645.up.railway.app/docs.
+- SQLite: `/var/data/stayfinder.db` on persistent `/var/data`; `SEED_ON_STARTUP=0`; one backend instance.
+- Google Identity Services, demo guest/host, Gemini and Resend integrations are implemented. Production Google login was confirmed before this final audit; current real inbox delivery is not certified.
+- `235f315` serializes SQLite booking creation with `BEGIN IMMEDIATE`.
+- `55b3e25` requires the host role on every hosting API route.
+- `1d1b625` triggered a Railway redeploy; recorded favorites/messages/bookings/host edits and all 32 original listing IDs survived. Temporary fixtures were removed.
+- Gates: 100 backend tests; frontend lint, typecheck, production build pass.
+- Production API audit: 198 checks; 14 race scenarios, 16 successes/12 conflicts, no double booking/500/lock errors.
+- Final audit browser scope was excluded explicitly; do not promote old browser results to new production verification. Read `QA_REPORT.md` for evidence and limits.
+- Feature development remains frozen. Only demonstrated bugs or factual documentation corrections are in scope.
+- Git author for deployments: `Apoorvan A`, verified email `apoorvan.a2023@vitstudent.ac.in`. Check deployment status after pushes rather than assuming success.
+
+## Historical handoff (superseded)
+
+The remaining content is retained as historical context. Its pending configuration, old revision, private-repository, initial-push and deployment steps are obsolete; do not execute them as a current plan.
+
+---
+
 # StayFinder — Deployment Handoff
 
 For another coding agent to continue without this conversation's history. Base every action on

@@ -1,108 +1,162 @@
 # StayFinder
 
-A full-stack Airbnb-style property marketplace. Browse and search stays, filter by price,
-type and amenities, view rich listing pages, book a date range with real availability
-checking, manage your trips and wishlist, and — as a host — create, edit and track listings
-from a dashboard.
+A full-stack stay marketplace with destination search, map discovery, guest reservations, and host management. FastAPI owns availability, pricing, and authorization; a SQLite write transaction prevents competing requests from confirming overlapping stays.
 
-Built with **Next.js (TypeScript)** and **FastAPI (Python)** over **SQLite**.
+## Live Demo
 
-> This is an original implementation built as an SDE assignment. Airbnb was used only as a
-> product and visual reference; all code, components, schema and seed data are original.
+**Live Demo:** [https://stay-finder-alpha-neon.vercel.app](https://stay-finder-alpha-neon.vercel.app)
 
----
+**API Docs:** [https://stayfinder-api-production-5645.up.railway.app/docs](https://stayfinder-api-production-5645.up.railway.app/docs)
 
-## Live demo
+**Backend:** [Railway API](https://stayfinder-api-production-5645.up.railway.app) · [Health](https://stayfinder-api-production-5645.up.railway.app/api/health)
 
-_Not yet deployed — the hosted URLs will be added here after deployment._ Run it locally in
-a few minutes using [Running locally](#running-locally); no sign-up or API keys are needed.
+## Demo Access
 
-From the account menu, choose **Explore as a demo guest** (Alex Morgan) or **Explore as a
-demo host** (Sofia Ramos) to start instantly.
+Open the account menu and choose:
 
----
+- **Explore as a demo guest** — browse, favorite, book, and manage trips as Alex Morgan.
+- **Explore as a demo host** — listings, reservations, dashboard, and messages as Sofia Ramos.
+- **Continue with Google** — use your own account through Google Identity Services.
 
-## Features
+No local setup is required for the hosted demo. Checkout is simulated: **no payment is taken**. Demo identities are shared, so their data can also be changed by other evaluators.
 
-**Guest**
-- Explore grid with photo-forward cards, guest-favorite badges, per-card image carousel
-- Expandable search (destination · dates · guests) with shareable URL state
-- Category row + a full filter sheet (price, property type, rooms, amenities, rating) with a
-  live result count
-- **Map view**: a desktop split view (results + interactive price-marker map that highlights
-  the hovered/selected card) and a mobile fullscreen map
-- **AI Concierge**: describe a stay in plain language ("beachfront villa in Greece for 4 with
-  a pool") and get real matching listings, with a "View all" that feeds the normal search
-- Pagination via "show more"
-- Listing detail: hero gallery + photo modal, amenities, **Meet your host**,
-  **Where you'll be** (approximate area only), reviews, and **Things to know** (house rules,
-  safety, cancellation policy)
-- Sticky reservation card with a **server-computed** price breakdown and a date picker that
-  blocks unavailable nights
-- End-to-end booking → mock checkout → confirmation code
-- My Trips → **reservation details** with full price breakdown, exact address and a **Get
-  directions** link (Google Maps) once confirmed, plus cancellation
-- Wishlist with optimistic favoriting that persists per user
-- **In-app messaging** with hosts (persisted conversations, unread counts)
+## At a Glance
 
-**Host**
-- Dashboard with metrics computed from real data (listings, reservations, revenue, rating)
-- Full listing CRUD (photos, pricing, capacity, amenities) with validation
-- Reservations across all owned listings, each opening a detail view
-- In-app messaging with guests
-- Ownership enforced server-side — a host can only mutate their own listings
+| Area | Implementation |
+|---|---|
+| Frontend | Next.js 14 App Router, React 18, TypeScript, Tailwind CSS, SWR |
+| Backend | FastAPI, SQLAlchemy 2, Pydantic 2, Uvicorn |
+| Database | SQLite on a Railway persistent volume |
+| Deployment | Vercel frontend, one Railway backend instance |
+| Auth | Google Identity Services and demo accounts; signed HttpOnly session cookie |
+| AI | Gemini structured intent → validated, inventory-backed search |
+| Email | Resend confirmation/cancellation integration; best-effort after commit |
+| Maps | Leaflet/OpenStreetMap; Google Maps directions links |
+| Testing | **100 passing backend tests**, lint/typecheck/build, production API audit |
 
-**Cross-cutting:** responsive (mobile → desktop), toasts, skeletons, empty/error states,
-accessible modals and controls, graceful 404. **Location privacy:** the public listing shows
-only the general area; the exact address is revealed only on a confirmed reservation.
+## Highlights
 
----
+- Photo-forward browsing, categories, destination/date/guest search, and shareable search URLs.
+- Price, capacity, bedroom, bed, property type, amenity, and rating filters with result counts.
+- Desktop compact search on scroll; map discovery with listing price markers.
+- Listing galleries, amenities, reviews, host information, and availability calendars.
+- Server-computed quotes, overlap protection, frozen booking prices, and cancellation.
+- Persistent Wishlist, Trips, reservation details, and guest–host message threads.
+- Host listing CRUD, reservation management, and metrics calculated from stored data.
+- Google sign-in, grounded AI Concierge, and transactional email integration.
 
-## Tech stack
+The interface takes inspiration from Airbnb; its implementation and branding are original.
 
-| Layer     | Choice |
-|-----------|--------|
-| Frontend  | Next.js 14 (App Router), TypeScript, Tailwind CSS, SWR, react-day-picker, Lucide, Sonner |
-| Backend   | FastAPI, SQLAlchemy 2.0 (typed), Pydantic v2, Uvicorn |
-| Database  | SQLite |
-| Auth      | Google Identity Services + HttpOnly signed session cookie (google-auth, itsdangerous) |
-| Maps      | Interactive Leaflet + OpenStreetMap tiles (price-marker results map, approximate listing map, exact reservation map) + Google Maps external directions |
-| Testing   | pytest (63 backend tests) |
-
-Money is stored and computed as **integer cents** end to end. Authentication uses **Google
-sign-in** with an **HttpOnly signed session cookie**; the backend derives identity from the
-session, never from a client-supplied id. Instant **demo guest/host** sessions flow through
-the same architecture so evaluators can explore without any setup.
-
----
-
-## Architecture
+## Architecture Snapshot
 
 ```mermaid
-flowchart TD
-    Browser["Browser (Next.js App Router)"]
-    subgraph FE["Frontend — Next.js + TS + Tailwind"]
-        UI["Server & client components"]
-        Client["lib/api (typed fetch + SWR)"]
-    end
-    subgraph BE["Backend — FastAPI"]
-        R["Routers (HTTP)"]
-        S["Services (pricing, availability, booking, host)"]
-        M["SQLAlchemy models"]
-    end
-    DB[("SQLite")]
-    UI --> Client -->|REST /api| R --> S --> M --> DB
+flowchart LR
+    U[Browser] --> F[Next.js / Vercel]
+    U -->|Credentialed HTTPS API| B[FastAPI / Railway]
+    B --> DB[(SQLite / persistent volume)]
+    U --> G[Google Identity Services]
+    B -->|Verify ID token| G
+    B --> AI[Gemini]
+    B --> E[Resend]
+    U --> M[OpenStreetMap tiles]
+    U --> D[Google Maps directions]
 ```
 
-Routers handle HTTP only; all domain logic and transaction boundaries live in services.
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+The browser calls Railway directly through the typed API client. Vercel serves Next.js; it is not an API proxy. Detailed references: [architecture](docs/ARCHITECTURE.md), [database](docs/DATABASE_DESIGN.md), [API](docs/API_DESIGN.md), and [release verification](docs/QA_REPORT.md).
 
----
+## Product Flows
 
-## Database design
+| Guest | Host |
+|---|---|
+| Search → filters/map → listing → quote | Enable hosting on the existing account |
+| Reserve → mock checkout → confirmed reservation | Create/edit/delete owned listings |
+| Trips → detail → directions/message/cancel | Dashboard → reservations → detail/messages |
+| Save/remove a listing → Wishlist | Review metrics from actual listing/booking data |
 
-Normalized schema; amenities and images are proper relations (never delimited strings).
-Full rationale and indexes in [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md).
+Search state lives in URL parameters, allowing direct links and refresh. SWR handles fetched data and revalidation; identity changes refresh account-dependent caches. Favorites update optimistically and roll back on failure. Anonymous protected actions prompt for authentication. The favorites provider does not fetch `/api/favorites` while anonymous.
+
+## Architecture and Design Decisions
+
+```mermaid
+flowchart TB
+    subgraph Frontend[Frontend / Vercel]
+        Pages[Next.js App Router pages]
+        UI[Interactive React components]
+        Client[Typed fetch client / SWR]
+        Pages --> UI --> Client
+    end
+    subgraph Backend[Backend / Railway]
+        Routers[FastAPI routers / Pydantic contracts]
+        Services[Domain services / transaction boundaries]
+        Models[SQLAlchemy models]
+        Routers --> Services --> Models
+    end
+    Client -->|Credentialed REST /api| Routers
+    Models --> DB[(SQLite / persistent volume)]
+```
+
+**Backend:** routers validate HTTP contracts and shape responses. Services implement pricing, availability, transactions, ownership, messaging, and integrations. SQLAlchemy models define relationships, constraints, and indexes; Pydantic schemas define public contracts. Normal browsing and the concierge share the same search service.
+
+Provider interfaces isolate Gemini and Resend, allowing failure tests without external calls. There is no queue, vector database, or separate AI reservation system.
+
+**Frontend:** App Router pages compose interactive client components. `lib/api.ts` owns JSON/error handling and credentialed requests. Auth and favorites contexts keep shared state small; feature components own forms, calendars, maps, and modals. Leaflet loads with SSR disabled because it accesses browser globals.
+
+Seeded remote media is served **unoptimized**, with a fallback image component. This favors reliable demo delivery over introducing an image processing/storage service.
+
+## Booking Correctness
+
+### Availability
+
+Reservations use half-open intervals: **`[check_in, check_out)`**. A conflict exists when:
+
+```text
+existing.check_in < requested.check_out
+AND existing.check_out > requested.check_in
+```
+
+`pending` and `confirmed` hold dates; `cancelled` does not. Checkout on another reservation's check-in day is allowed. Dates and capacity are validated again at creation, so an earlier quote does not reserve inventory.
+
+### Concurrent requests
+
+On SQLite, creation starts **`BEGIN IMMEDIATE` before reading availability**. The writer lock is held through validation, conflict checking, price calculation, insert, and commit. Another writer waits, then sees the first committed booking and receives `409 BOOKING_CONFLICT`. Errors roll back. Email runs after commit releases the lock.
+
+Regression tests deliberately widen the read/write gap using separate SQLite connections to exercise competing confirmations. Protection depends on the service transaction; the schema has no exclusion constraint. The deployed backend remains a single SQLite instance.
+
+```mermaid
+sequenceDiagram
+    participant A as Guest A
+    participant B as Guest B
+    participant API as Booking service
+    participant DB as SQLite
+    A->>API: Confirm dates
+    API->>DB: BEGIN IMMEDIATE
+    B->>API: Confirm same dates
+    API->>DB: Second writer waits
+    API->>DB: Validate, check conflicts, insert, commit
+    API-->>A: 201 + confirmation code
+    API->>DB: Second writer checks committed state
+    API-->>B: 409 BOOKING_CONFLICT
+```
+
+### Pricing and snapshots
+
+Amounts are stored and returned as integer cents. Current pricing uses Python `round` for fees:
+
+```text
+nights        = check_out - check_in
+accommodation = nightly_rate_cents × nights
+service_fee   = round(accommodation × 0.14)
+taxes         = round((accommodation + cleaning_fee_cents) × 0.08)
+total         = accommodation + cleaning_fee_cents + service_fee + taxes
+```
+
+For a $200 nightly rate, three nights, and $50 cleaning: accommodation $600, service fee $84, taxes $52, total **$786**. Client-supplied totals are ignored. Each booking stores its nightly rate, nights, cleaning fee, service fee, taxes, and total; later listing edits do not rewrite those values.
+
+### Cancellation
+
+Only the booking's guest may cancel, before the check-in date. Cancellation preserves the row and price snapshot and releases the interval. Repeated cancellation is idempotent and returns the cancelled booking. There is no real payment or refund settlement.
+
+## Data Model
 
 ```mermaid
 erDiagram
@@ -111,282 +165,262 @@ erDiagram
     USER ||--o{ REVIEW : writes
     USER ||--o{ FAVORITE : saves
     LISTING ||--o{ LISTING_IMAGE : has
+    LISTING ||--o{ LISTING_AMENITY : offers
+    AMENITY ||--o{ LISTING_AMENITY : identifies
     LISTING ||--o{ BOOKING : receives
     LISTING ||--o{ REVIEW : has
-    LISTING }o--o{ AMENITY : offers
     LISTING ||--o{ FAVORITE : saved_in
+    LISTING ||--o{ CONVERSATION : discussed_in
+    USER ||--o{ CONVERSATION : participates_in
+    CONVERSATION ||--o{ MESSAGE : contains
+    USER ||--o{ MESSAGE : sends
+    BOOKING |o--o{ REVIEW : references
 ```
 
-### Booking availability (the core correctness model)
+| Entity | Key responsibilities |
+|---|---|
+| User | Unique email, unique Google subject, role and host profile |
+| Listing | Host ownership, location, pricing, capacity, category, derived ratings |
+| ListingImage | Ordered images and alternative text |
+| Amenity / ListingAmenity | Normalized many-to-many amenities |
+| Booking | Dates/status, guest, frozen price snapshot, unique code, email timestamps |
+| Review | Listing/author, optional booking, rating constrained to 1–5 |
+| Favorite | Unique `(user_id, listing_id)` |
+| Conversation | Unique `(listing_id, guest_id)`; guest and host participants |
+| Message | Conversation, sender, body, read flag, timestamp |
 
-Dates are modeled as a **half-open interval** `[check_in, check_out)`. Two bookings conflict
-iff:
+Indexes support city, price, category, property type, booking listing/status and guest, conversation participants, and message order. Foreign keys are enabled per SQLite connection. Current listing deletion cascades dependent bookings, reviews, favorites, images, and conversations; this is demo CRUD, not a production reservation-retention policy.
 
-```
-existing.check_in < requested.check_out  AND  existing.check_out > requested.check_in
-```
+The deterministic seed contains **32 listings**. `python -m app.seed` drops and recreates the local database; it is not a migration command. Production seeds are not rerun on startup.
 
-So `Oct 10→12` and `Oct 12→14` can coexist (the checkout day frees the night), while
-`Oct 11→13` is rejected. Only `confirmed`/`pending` bookings hold dates; cancelling frees
-them. Bookings are created inside a transaction that **re-checks** conflicts (page-load
-availability can be stale) and returns `409 BOOKING_CONFLICT` if the dates were just taken.
-Each booking stores a **price snapshot**, so later price changes never rewrite history.
+## API Surface
 
----
+Base: [Railway API](https://stayfinder-api-production-5645.up.railway.app). Public [Swagger UI](https://stayfinder-api-production-5645.up.railway.app/docs) is generated from deployed FastAPI schemas.
 
-## API overview
+| Group | Representative endpoints |
+|---|---|
+| System | `GET /api/health` |
+| Auth | `GET /api/auth/config`, `GET /api/auth/me`, `POST /api/auth/demo`, `/google`, `/become-host`, `/logout` |
+| Browse | `GET /api/listings`, `/listings/{id}`, `/categories`, `/amenities`, `/listings/price-range` |
+| Listing detail | `GET /api/listings/{id}/availability`, `/reviews` |
+| Booking | `POST /api/bookings/quote`, `POST /api/bookings`, `GET /api/trips`, `GET /api/bookings/{id}`, `POST /api/bookings/{id}/cancel` |
+| Wishlist | `GET /api/favorites`, `POST/DELETE /api/favorites/{listing_id}` |
+| Hosting | `GET /api/host/metrics`, `/listings`, `/reservations`; listing `POST/PATCH/DELETE` |
+| Messaging | `GET/POST /api/conversations`, `GET /api/conversations/{id}`, `POST /api/conversations/{id}/messages` |
+| Concierge | `POST /api/concierge` |
 
-REST under `/api`, interactive docs at `/docs`. Errors use a consistent
-`{ "error": { "code", "message" } }` shape. Full list in [docs/API_DESIGN.md](docs/API_DESIGN.md).
+Search supports location, dates, guests, price bounds, property type, category, repeated amenity IDs, bedrooms, beds, minimum rating, and sorting. Pages default to 18 results and are capped at 48. Responses include `items`, `total`, `page`, `page_size`, and `total_pages`.
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/api/health` | Health check |
-| GET | `/api/listings` | Search/filter/paginate listings (availability-aware) |
-| GET | `/api/listings/{id}` | Listing detail |
-| GET | `/api/listings/{id}/availability` | Booked date ranges |
-| GET | `/api/listings/{id}/reviews` | Reviews + aggregate |
-| POST | `/api/bookings/quote` | Server-side price quote + availability |
-| POST | `/api/bookings` | Create booking (atomic, 409 on conflict) |
-| GET | `/api/trips` · `/api/bookings/{id}` | Current user's bookings · reservation detail (exact address when confirmed) |
-| POST | `/api/bookings/{id}/cancel` | Cancel own booking (before check-in) |
-| GET/POST | `/api/conversations...` | In-app messaging (participant-only) |
-| GET/POST/DELETE | `/api/favorites...` | Wishlist |
-| GET | `/api/host/metrics` | Host dashboard metrics |
-| GET/POST/PATCH/DELETE | `/api/host/listings...` | Listing CRUD (ownership enforced) |
-| GET | `/api/host/reservations` | Reservations across owned listings |
-| GET | `/api/auth/me` · `/api/auth/config` | Current session · public client config |
-| POST | `/api/auth/google` · `/api/auth/demo` | Sign in with Google · start a demo session |
-| POST | `/api/auth/become-host` · `/api/auth/logout` | Enable hosting · sign out |
+Errors have a stable shape: `{ "error": { "code": "BOOKING_CONFLICT", "message": "..." } }`. Anonymous protected calls return 401; forbidden ownership/role returns 403; missing resources return 404; booking conflicts return 409; invalid inputs return 422.
 
----
+## Authentication and Security
 
-## Authentication
+- GIS returns a Google ID token; Railway verifies it against `GOOGLE_CLIENT_ID` and upserts the user by immutable Google subject. This credential flow has no backend OAuth redirect route.
+- Google and demo login issue the same signed `sf_session` cookie. Identity comes from that cookie, never from body fields or a user-ID header.
+- Production uses **HttpOnly, Secure, SameSite=None**, path `/`, and a host-only cookie. Logout clears the same configuration. Local HTTP uses SameSite=Lax by default.
+- CORS permits the exact Vercel origin with credentials. Frontend requests use `credentials: "include"`; no wildcard origin is combined with credentialed CORS.
+- Hosting APIs require the host role. Enabling hosting changes the same account. Listing ownership and booking/conversation participation are checked server-side.
+- Gemini/Resend keys and the session secret stay in backend environment settings. Env files, databases, dependencies, and build artifacts are ignored by Git.
 
-- **Google sign-in** ("Continue with Google"): the frontend obtains a Google ID token via
-  Google Identity Services and posts it to `/api/auth/google`. The backend verifies the token
-  with `google-auth`, upserts a user keyed on the **provider subject id** (not email), and
-  issues a session.
-- **Sessions** are a signed, **HttpOnly** cookie (`itsdangerous`) — never `localStorage`. The
-  backend resolves the user from the cookie on every request; a client can never claim to be
-  another user by editing a request body or id.
-- **Authorization** is enforced server-side: guests cancel only their own bookings and manage
-  only their own favorites; hosts edit/delete only their own listings and see only their own
-  reservations and metrics.
-- **Guest → host:** new accounts start as guests and enable hosting in one click
-  (`/api/auth/become-host`) on the same account.
-- **Demo access** (`/api/auth/demo`) issues a session for a built-in guest or host identity
-  through the exact same cookie mechanism — no special bypass.
+There is no implemented rate limiter or dedicated CSRF-token mechanism. Cookie signing does not encrypt contents. These are boundaries to revisit before real payments or broader public operation.
 
-Anonymous visitors can browse, search, filter, open listings and read reviews. Booking,
-favoriting, trips and hosting prompt a sign-in modal, preserving the intended action.
+## Gemini AI Concierge
 
----
-
-## AI Concierge
-
-Natural-language stay discovery over **real** inventory, not a generic chatbot:
-
-```
-message → LLM intent parser → structured SearchIntent → backend validation
-        → existing listing search service → real listings → clickable results
+```text
+Message → Gemini JSON SearchIntent → Pydantic validation
+→ inventory vocabulary normalization → amenity IDs → availability-aware search
+→ real database listing cards + normal-search query string
 ```
 
-The model only converts text into a structured `SearchIntent`; the backend validates it,
-grounds it in the real inventory vocabulary, and runs the **existing availability-aware search**
-— so it can never invent listings, prices, availability or amenities. Results are clickable,
-and "View all" opens the normal Explore page with the interpreted filters applied.
+The provider uses `generateContent`, a system instruction, `responseMimeType: application/json`, and a response schema. The repository default is `gemini-3.8-flash`; `AI_MODEL` can override it. Safe logs record provider/model, HTTP status, error category, and parsed intent without keys or authorization headers.
 
-The LLM provider is configured via env (`AI_PROVIDER`/`AI_API_KEY`/`AI_MODEL`). **With no key,
-a built-in deterministic parser handles common phrases** (location, budget, guests, type,
-category, amenities), so the concierge — and the whole app — works with zero AI setup. All
-model calls are server-side; no secret is ever exposed to the browser.
+The deterministic parser runs when the provider is missing or fails, including timeout, malformed JSON, and schema errors. Gemini cannot create listings, invent prices, declare availability, access the database directly, or book automatically. No chat history is persisted.
 
-## Transactional email
+Verified production search examples:
 
-Booking and cancellation confirmation emails are sent to the authenticated user's **verified
-email**, from StayFinder's own provider (Resend) — **never through the user's Gmail** and never
-using Gmail send scopes. Key properties:
+| Prompt | Observed grounded result |
+|---|---|
+| “do you have any properties in india” | `location=India`; zero results |
+| “beachfront villa in Greece for 4 with a pool” | Greece, 4 guests, Villa, Beachfront, Pool; zero matches |
+| “cheapest places in Lisbon” | Lisbon, `price_asc`; one real listing |
+| Villa in Antarctica for 50 guests under $1 with a pool | Zero results |
 
-- **Booking success never depends on email** — the reservation is committed first; email is a
-  best-effort step whose failure is logged and swallowed.
-- **Idempotent** — `confirmation_email_sent_at` / `cancellation_email_sent_at` prevent duplicate
-  sends on retries/refreshes.
-- **Recipient is backend-controlled** (the session user), never a request-body address.
-- **Demo accounts are skipped**, so the demo never emails strangers.
-- Links use `FRONTEND_URL`. Delivery is optional locally (unconfigured → skipped).
+The results are retrieved from StayFinder inventory after intent validation; a zero-result response is preserved when no listing matches.
 
----
+## Transactional Email
 
-## Repository structure
+Confirmation is attempted after booking commit; cancellation mail follows successful cancellation. Resend receives HTML and plain text with the reservation code and a link built from `FRONTEND_URL`. Confirmation HTML includes the price breakdown and directions.
 
-```
-backend/     FastAPI app (models, schemas, services, routers, seed, tests)
-frontend/    Next.js app (app/ routes, components, hooks, lib, types)
-docs/        Planning & design docs (architecture, DB, API, design system, tests)
-```
+The recipient is the stored booking guest's email, not a request-body address. Demo identities skip email. Successful sends set booking timestamps; an already-set timestamp skips another send. Failures are logged safely and do not roll back a committed booking.
 
----
+Delivery is synchronous and best-effort, without durable retries or an outbox. Sending requires a configured Resend account and permitted sender; provider acceptance and inbox delivery are separate outcomes. Automated tests use a mocked provider to cover success, failure, timestamps, and winner-only delivery during a race.
 
-## Demo access
+## Maps and Location Policy
 
-Open the account menu (or any sign-in prompt) and choose **Explore as a demo guest** or
-**Explore as a demo host** — no Google account needed. Each starts a real session.
+Leaflet renders OpenStreetMap tiles and a property pin or filtered result price markers. Directions open Google Maps using coordinates, with the address as a fallback.
 
-| Identity | Role | Notes |
-|----------|------|-------|
-| Alex Morgan | Demo guest | Seeded upcoming, past and cancelled trips, a wishlist, and host conversations |
-| Sofia Ramos | Demo host (Superhost) | Owns ~6 listings with reservations, reviews and messages |
-| Daniel Kim | Demo host (Superhost) | Owns ~6 listings |
+Public listing responses omit the street address; confirmed reservation details expose it to the guest and listing host. Cancelled details hide it again. **Listing coordinates are public** and reused for reservation maps; there is no coordinate-obfuscation layer. Seeded locations are demo data, not verified operational accommodation addresses.
 
-Listings are distributed across **six** seeded hosts so no single host owns the whole
-marketplace; the two demo hosts above have enough data to make the dashboard meaningful.
+## Deployment and Production Hardening
 
----
+| Component | Current deployment |
+|---|---|
+| Frontend | Vercel; project root `frontend`, branch `master` |
+| Backend | Railway; project root `backend`, one instance |
+| SQLite | `/var/data/stayfinder.db` on the `/var/data` persistent volume |
 
-## Running locally
+Railway installs `backend/requirements.txt` and starts `uvicorn app.main:app --host 0.0.0.0 --port $PORT`. `DATABASE_URL` points to the volume; `SEED_ON_STARTUP=0` prevents reseeding after initial seed. Vercel's `NEXT_PUBLIC_API_URL` is the stable Railway origin. Secrets live in provider settings. `render.yaml` is retained only as a legacy, unused blueprint.
 
-**Prerequisites:** Python 3.10+, Node 18+.
+Hardening includes cross-site cookies, exact-origin CORS, Google's verification transport dependency, Gemini request-format handling, SQLite booking serialization, and host-role enforcement. Deployment success is checked after pushing; the QA report records source revisions and persistence evidence.
 
-### 1. Backend
+## Verification
 
-```bash
+### Automated gates
+
+**100 pytest tests pass**. Frontend ESLint, TypeScript (`tsc --noEmit`), and production build (`next build`) also pass.
+
+Coverage includes auth, Google identity reuse with verification mocked, host role/ownership, booking validation/pricing/overlap/cancellation, favorites, messaging, privacy, search, concierge fallback/grounding, and email failure/idempotency.
+
+Concurrency tests use a real temporary SQLite file, separate connections, independent authenticated API clients, and a widened read/write gap. They cover five exact-date races, four overlap shapes, both adjacency orders, three contenders, same-user double submit, cancel/rebook, participant isolation, and winner-only email delivery.
+
+### Production API audit
+
+- 198 successful checks across auth, CORS, search/filter results, categories, detail/ratings, favorites, concierge grounding, and host ownership/role.
+- **14 race scenarios: 16 successful bookings, 12 clean 409 conflicts, zero 500s, zero lock errors, zero double bookings.** Two independent Demo Guest/Host sessions exercised five exact-date races, overlap shapes, adjacency, double submit, and cancel/rebook.
+- Active-date invariants were checked through participant Trips responses. Direct Railway database access was unavailable. QA reservations on original listings were cancelled.
+- Host CRUD/metrics, guest–host messages, reservation price agreement, and same-account hosting promotion were verified through production APIs.
+- A Railway redeploy preserved the original 32 listings, favorites, messages, confirmed/cancelled bookings, and host edits on the persistent volume. Temporary QA fixtures were then removed.
+
+The automated suite covers backend behavior and frontend compilation checks. The production results above are API-level checks, not an automated browser E2E suite. See the [QA report](docs/QA_REPORT.md) for test methods, results, and coverage boundaries.
+
+### Run checks locally
+
+```powershell
 cd backend
-python -m venv .venv
-# Windows: .venv\Scripts\activate   |   macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-python -m app.seed          # create & seed app.db (32 listings)
-uvicorn app.main:app --reload --port 8000
+.venv\Scripts\python -m pytest
+cd ..\frontend
+npm run lint
+npm run typecheck
+npm run build
 ```
 
-API at `http://localhost:8000` (docs at `/docs`). `cp .env.example .env` to customize.
-The app also seeds automatically on first startup if the database is empty.
+## Local Setup
 
-### 2. Frontend
+Prerequisites: Python 3.10+ and Node.js 18.17+ with npm. Core evaluation does not require Google, Gemini, Resend, Docker, or Redis.
 
-```bash
-cd frontend
-npm install
-cp .env.example .env.local   # NEXT_PUBLIC_API_URL=http://localhost:8000
+### Backend — PowerShell
+
+```powershell
+git clone https://github.com/Apoorvan-A/StayFinder.git
+cd StayFinder\backend
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+.venv\Scripts\python -m app.seed
+.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
+```
+
+The seed command **replaces the local database**. Never run it against the production volume. On macOS/Linux use `.venv/bin/python` and `cp .env.example .env`.
+
+### Frontend — second terminal
+
+```powershell
+cd StayFinder\frontend
+npm ci
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
-App at `http://localhost:3000`.
+Open `http://localhost:3000`. The example targets the backend on `http://localhost:8000`. On macOS/Linux use `cp .env.example .env.local`.
 
----
+## Environment Variables
 
-## Environment variables
+Copy the examples; keep real secrets outside Git. All variables are backend-only except `NEXT_PUBLIC_API_URL`. The public Google client ID is obtained from `/api/auth/config`.
 
-**Backend** (`backend/.env`)
-- `DATABASE_URL` — default `sqlite:///./app.db`
-- `CORS_ORIGINS` — comma-separated allowed origins (the frontend URL)
-- `SEED_ON_STARTUP` — `1` to seed an empty DB on boot
-- `SESSION_SECRET` — secret used to sign session cookies (set a strong value in production)
-- `COOKIE_SECURE` / `COOKIE_SAMESITE` — `1` / `none` for a cross-site HTTPS deployment, else `0` / `lax`
-- `GOOGLE_CLIENT_ID` — Google OAuth web client id (blank disables Google sign-in; demo access still works)
-- `FRONTEND_URL` — public origin used for links in emails
-- `AI_PROVIDER` / `AI_API_KEY` / `AI_MODEL` — optional; blank → deterministic concierge parser
-- `EMAIL_PROVIDER` / `EMAIL_API_KEY` / `EMAIL_FROM` — optional; blank → email delivery skipped
+| Variable | Required? | Secret? | Purpose |
+|---|---|---|---|
+| `DATABASE_URL` | Production | No | SQLAlchemy database/volume location |
+| `SESSION_SECRET` | Production | Yes | Session signing; replace the development default |
+| `CORS_ORIGINS` | Production | No | Exact allowed frontend origins |
+| `COOKIE_SECURE` | Production configuration | No | Secure-cookie flag |
+| `COOKIE_SAMESITE` | Production configuration | No | Cross-site cookie policy |
+| `SEED_ON_STARTUP` | Deployment configuration | No | Seed an empty database; disable after initial seed |
+| `FRONTEND_URL` | Hosted email integration | No | Stable origin for email links |
+| `GOOGLE_CLIENT_ID` | Optional | No | Expected Google Web client audience |
+| `AI_PROVIDER` | Optional | No | Concierge provider selection |
+| `AI_API_KEY` | Optional | Yes | Gemini server credential |
+| `AI_MODEL` | Optional | No | Override the Gemini default model |
+| `EMAIL_PROVIDER` | Optional | No | Email provider selection |
+| `EMAIL_API_KEY` | Optional | Yes | Resend server credential |
+| `EMAIL_FROM` | Optional | No | Sender permitted by Resend account/domain |
+| `NEXT_PUBLIC_API_URL` | Frontend | No | Backend origin compiled into frontend |
 
-**Frontend** (`frontend/.env.local`)
-- `NEXT_PUBLIC_API_URL` — base URL of the backend (the Google client id is served by the backend)
+Configuration: [backend example](backend/.env.example), [frontend example](frontend/.env.example), and `backend/app/config.py`.
 
----
+## Project Structure
 
-## Google OAuth setup (optional for local dev)
-
-Demo access needs no setup. To enable "Continue with Google":
-
-1. In the [Google Cloud Console](https://console.cloud.google.com/) create an **OAuth client
-   ID** of type **Web application**.
-2. Add **Authorized JavaScript origins**: `http://localhost:3000` (and your deployed frontend
-   origin in production).
-3. Put the client id in `backend/.env` as `GOOGLE_CLIENT_ID`. The frontend reads it from
-   `/api/auth/config`, so no frontend env var is needed.
-
-Never commit the client id or any secret.
-
----
-
-## Tests
-
-```bash
-cd backend && pytest        # 79 tests: booking matrix, ownership, favorites, host CRUD, auth, messaging, concierge, email
-cd frontend && npm run build && npm run lint   # type-safe production build + lint
+```text
+backend/
+  app/
+    routers/       HTTP endpoints
+    services/      booking, pricing, availability, auth, host, messaging, integrations
+    models/        SQLAlchemy entities and constraints
+    schemas/       Pydantic contracts
+    seed.py        deterministic local fixture data
+  tests/           isolated regression and concurrency tests
+frontend/
+  src/app/         Next.js routes
+  src/components/  search, listing, booking, host, messaging, map, concierge, auth
+  src/hooks/       auth, favorites, concierge state
+  src/lib/         typed API client and formatting
+docs/              architecture, schema, API, QA, handoff
 ```
 
-The booking suite covers overlap/adjacency, surrounding/inside ranges, zero-night, past
-dates, capacity, server-side pricing, and cancellation freeing availability. Auth tests cover
-first-login provisioning, returning-user reuse, session enforcement, tampered cookies, and the
-guest→host transition (Google verification is mocked — no live Google calls).
+## Assignment Requirements Matrix
 
----
+| Requirement | StayFinder implementation |
+|---|---|
+| Browse/search/cards | Paginated listing API, photo cards, URL-based search |
+| Filters/categories | Server filters, category navigation, dynamic counts |
+| Pagination | Bounded page size, total/page metadata, Show more |
+| Detail/gallery/amenities/reviews | Detail API, photo modal, host/review sections |
+| Calendar/pricing | Booked-range API and authoritative quote |
+| Booking/overlap/checkout | SQLite writer lock, 409 conflicts, simulated checkout |
+| Trips/persistence | Stored bookings, status views, details and cancellation |
+| Host CRUD/dashboard | Role/ownership checks, metrics and reservations |
+| Wishlist | Per-user favorite rows and optimistic UI |
+| SQLite/schema/API/README | Normalized models, constraints/indexes, Swagger, design docs |
+| Airbnb-inspired UX/responsiveness | Original StayFinder header, cards, categories and layouts |
+| Bonus: maps/directions | Leaflet/OpenStreetMap and Google Maps link |
+| Bonus: Google auth | GIS verification and account reuse |
+| Bonus: AI Concierge | Structured-intent, inventory-grounded search |
+| Bonus: email/messaging | Resend integration and participant-only persisted threads |
 
-## Scalability & production evolution
+## Tradeoffs and Assumptions
 
-The current submission keeps the system intentionally simple while drawing clean boundaries
-that could evolve without a rewrite.
+| Current choice | Benefit | Limitation | Possible evolution |
+|---|---|---|---|
+| SQLite / one backend instance | Small operational footprint, durable volume | Serialized writes; no horizontal write scaling | PostgreSQL |
+| Mock checkout | Safe evaluation without financial credentials | No settlement/refunds | Payment provider/webhooks |
+| Synchronous email | Simple post-commit behavior | Request latency; no durable retry | Outbox/worker |
+| REST messaging | Persistent, auditable authorization | No live push | SSE/WebSocket where justified |
+| Seeded remote media | Complete demo inventory | Static media, external availability | Object storage/CDN |
+| Shared demo users | Immediate access | Shared mutable history | Isolated evaluator fixtures |
+| Simplified policies/hosting | Clear guest and host flows | No operational host verification or rich refund rules | Onboarding/policy checks |
 
-**Already in place**
-- **Server-side pagination** (`page` / `page_size`, bounded at 48) — the browser never loads
-  the whole marketplace.
-- **Server-side filtering & search** — location, dates, price, type, rooms, amenities, rating
-  and sort are all SQL, built in `listing_service`.
-- **Indexes** matched to real access patterns (listing city/price/type/category, booking
-  `listing_id+status`/guest, review `listing_id`, favorite uniqueness, conversation
-  guest/host, message `conversation_id+created_at`).
-- **N+1 avoidance** via intentional `selectinload` on list/detail/host/messaging queries.
-- **Stateless API** — all durable state is in the database; identity comes from a signed
-  cookie, so instances are horizontally scalable.
-- **Request-scoped DB sessions** with explicit transactions around domain mutations.
-- **Image optimization** via `next/image` with per-breakpoint `sizes`.
+Hosts and addresses are demo data. There is no real payment collection, verified accommodation ownership, or operating hospitality inventory. Listing deletion removes dependent reservations. Email timestamps provide application-level send suppression, not exactly-once delivery through every process failure.
 
-**Natural next steps for real production scale** (not implemented here)
-- PostgreSQL in place of SQLite; object storage + CDN for images.
-- Redis/SQS-backed workers for *non-critical* async work (e.g. notification emails).
-- Horizontally scaled stateless API instances behind a load balancer, with caching and
-  tracing/observability.
+## Known Limitations
 
-Critically, **booking correctness stays synchronous and transactional** — availability
-re-checks and price calculation happen inside the booking transaction and would not be moved
-to a queue.
+- Checkout is simulated; no payment settlement or refund processing exists.
+- SQLite serializes writes and the hosted backend is a single instance.
+- Messages persist but do not arrive through a real-time push channel.
+- Email is best-effort and synchronous, without durable retries.
+- Seeded media/addresses, simplified policies, shared demo identities, and cascade deletion reflect demonstration scope.
+- Automated browser E2E coverage is not included.
 
----
+## Scalability: Current and Future
 
-## Deployment
+**Implemented:** server pagination capped at 48, SQL filters, relevant indexes, explicit relationship loading, service boundaries, environment configuration, and health endpoint. SQLite's writer lock protects overlap correctness while limiting concurrent writes. No horizontal scaling is claimed.
 
-- **Frontend → Vercel:** import `frontend/`, set `NEXT_PUBLIC_API_URL` to the backend URL.
-- **Backend → Render:** [`render.yaml`](render.yaml) provisions a web service with a
-  persistent disk for the SQLite file. Set `CORS_ORIGINS` to the Vercel URL. The service
-  seeds the database on first boot.
-
-SQLite is intentionally retained per the assignment; on ephemeral hosts a persistent disk
-is used so bookings survive restarts.
-
----
-
-## Engineering decisions & assumptions
-
-- **Auth:** Google sign-in plus demo sessions, both over an HttpOnly signed session cookie.
-  Identity is resolved server-side from the cookie; the frontend can never assert who it is.
-  Demo access is kept so evaluators can start instantly without credentials.
-- **No Alembic:** for a SQLite demo, `create_all` + an idempotent seed is more reliable and
-  reproducible than migrations. Documented rather than hidden.
-- **Integer cents** everywhere to avoid floating-point money bugs.
-- **Server-authoritative pricing & availability:** the client never computes totals; the
-  backend recomputes and re-checks inside the booking transaction.
-- **Images:** curated royalty-free Unsplash URLs, served **unoptimized** for reliability (the
-  on-demand optimizer can hiccup on concurrent remote fetches); a `SafeImage` wrapper degrades
-  to a placeholder if one fails. Production would front images with object storage + a CDN.
-- **Map:** a lightweight embedded OpenStreetMap view (no API key), per the assignment's
-  "static/basic map is fine".
-
-### Known limitations / future work
-- Reviews are seeded; post-stay review creation is a natural next step (eligibility is
-  already modeled via `booking_id`).
-- Messaging and identity verification are intentionally out of scope.
-- A production deployment would move to Postgres; the auth layer is already real.
-- The AI Concierge and transactional email are implementation-ready; live LLM and live email
-  delivery require provider keys (and, for emails to real inboxes, Google sign-in for a verified
-  recipient and a verified sender domain) configured after deployment. Locally both degrade
-  gracefully (deterministic parser / skipped delivery).
+**Future options, not implemented:** PostgreSQL with transactional overlap enforcement; object storage/CDN; stateless FastAPI instances behind a load balancer; Redis only for measured cache/rate-limit needs; outbox/workers; observability and rate limiting. Real payments and live messaging are separate extensions, not requirements to run this project.

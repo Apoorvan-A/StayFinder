@@ -7,7 +7,7 @@ frontend sends requests with `credentials: "include"`.
 
 ## Conventions
 - Pagination: `?page=1&page_size=18` → `{ items: [...], page, page_size, total, total_pages }`.
-- Money returned as integer cents plus a formatted field where helpful.
+- Money returned as integer cents; the frontend formats currency.
 - Errors: `{ "error": { "code": "BOOKING_CONFLICT", "message": "..." } }` with the right status.
 
 ## Error codes
@@ -36,7 +36,7 @@ reservation's detail (`GET /api/bookings/{id}`) and in the owner's host listing 
   property_type, category, amenities (repeatable), bedrooms, beds, min_rating, sort, page,
   page_size`. Availability-aware when dates present.
 - `GET /api/listings/{id}` — full detail (images, amenities, host, rating, review_count)
-- `GET /api/listings/{id}/availability?months=n` — booked date ranges
+- `GET /api/listings/{id}/availability` — booked date ranges
 - `GET /api/listings/{id}/reviews` — reviews + aggregate
 - `GET /api/categories` · `GET /api/amenities` — filter metadata
 
@@ -46,7 +46,7 @@ reservation's detail (`GET /api/bookings/{id}`) and in the owner's host listing 
 - `GET /api/trips` — current user's bookings with listing
 - `GET /api/bookings/{id}` — reservation detail for a participant (guest or the listing's host);
   exact address + coordinates included only when the reservation is `confirmed`
-- `POST /api/bookings/{id}/cancel` — guest-only; allowed up to the check-in date; frees dates
+- `POST /api/bookings/{id}/cancel` — guest-only; allowed before the check-in date; frees dates
 - `POST /api/bookings/{id}/message` — get-or-create the booking's conversation and post a message
 
 ### Messaging (participant-only)
@@ -64,10 +64,10 @@ reservation's detail (`GET /api/bookings/{id}`) and in the owner's host listing 
 - `POST /api/favorites/{listing_id}` — add (idempotent-ish; 409 on dup)
 - `DELETE /api/favorites/{listing_id}` — remove
 
-### Host (ownership enforced against `X-Demo-User-Id`)
+### Host (host role and ownership enforced from the session cookie)
 - `GET /api/host/metrics` — listings count, upcoming/total reservations, revenue, avg rating
 - `GET /api/host/listings` — owned listings
 - `POST /api/host/listings` — create
 - `PATCH /api/host/listings/{id}` — update (owner only → 403 otherwise)
-- `DELETE /api/host/listings/{id}` — delete (safe w.r.t. bookings)
+- `DELETE /api/host/listings/{id}` — delete (cascades dependent bookings and other listing data)
 - `GET /api/host/reservations` — reservations across owned listings

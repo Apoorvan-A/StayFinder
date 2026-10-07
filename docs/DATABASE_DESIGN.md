@@ -47,7 +47,7 @@ is rejected. Only **availability-holding statuses** (`confirmed`, `pending`) blo
 
 ## Constraints & indexes
 - FKs with sensible `ON DELETE` behavior (listing delete cascades images/amenities; bookings
-  are preserved/cancelled, never orphaned).
+  are deleted by cascade, never orphaned).
 - Unique: `users.email`, `favorites(user_id, listing_id)`, `bookings.confirmation_code`,
   `listing_amenities(listing_id, amenity_id)`.
 - CHECK: `review.rating BETWEEN 1 AND 5`, `booking.check_out > booking.check_in`,
@@ -65,18 +65,28 @@ erDiagram
     USER ||--o{ REVIEW : writes
     USER ||--o{ FAVORITE : saves
     LISTING ||--o{ LISTING_IMAGE : has
+    LISTING ||--o{ LISTING_AMENITY : offers
+    AMENITY ||--o{ LISTING_AMENITY : identifies
     LISTING ||--o{ BOOKING : receives
     LISTING ||--o{ REVIEW : has
     LISTING ||--o{ FAVORITE : saved_in
-    LISTING }o--o{ AMENITY : offers
-    BOOKING |o--o| REVIEW : may_produce
+    LISTING ||--o{ CONVERSATION : discussed_in
+    USER ||--o{ CONVERSATION : participates_in
+    CONVERSATION ||--o{ MESSAGE : contains
+    USER ||--o{ MESSAGE : sends
+    BOOKING |o--o{ REVIEW : references
 
-    USER { int id PK
+    USER {
+        int id PK
         string name
         string email UK
         string role
-        bool is_superhost }
-    LISTING { int id PK
+        string provider
+        string provider_subject_id UK
+        bool is_superhost
+    }
+    LISTING {
+        int id PK
         int host_id FK
         string title
         string city
@@ -89,28 +99,76 @@ erDiagram
         string property_type
         string category
         float rating
-        int review_count }
-    LISTING_IMAGE { int id PK
+        int review_count
+    }
+    LISTING_IMAGE {
+        int id PK
         int listing_id FK
         string url
-        int sort_order }
-    AMENITY { int id PK
-        string name
-        string icon }
-    BOOKING { int id PK
+        int sort_order
+    }
+    AMENITY {
+        int id PK
+        string name UK
+        string icon
+    }
+    LISTING_AMENITY {
+        int listing_id PK,FK
+        int amenity_id PK,FK
+    }
+    BOOKING {
+        int id PK
         int listing_id FK
         int guest_id FK
         date check_in
         date check_out
         int guest_count
         string status
+        int nightly_rate_snapshot_cents
+        int night_count
+        int cleaning_fee_cents
+        int service_fee_cents
+        int taxes_cents
         int total_cents
-        string confirmation_code }
-    REVIEW { int id PK
+        string confirmation_code UK
+        datetime confirmation_email_sent_at
+        datetime cancellation_email_sent_at
+    }
+    REVIEW {
+        int id PK
         int listing_id FK
         int user_id FK
+        int booking_id FK
         int rating
-        string comment }
-    FAVORITE { int user_id FK
-        int listing_id FK }
+        string comment
+    }
+    FAVORITE {
+        int id PK
+        int user_id FK
+        int listing_id FK
+    }
+    CONVERSATION {
+        int id PK
+        int listing_id FK
+        int guest_id FK
+        int host_id FK
+    }
+    MESSAGE {
+        int id PK
+        int conversation_id FK
+        int sender_id FK
+        string body
+        bool is_read
+        datetime created_at
+    }
 ```
+
+## Concurrency and email fields
+
+SQLite booking creation acquires `BEGIN IMMEDIATE` before reading availability and holds its writer lock through insertion/commit. Competing requests cannot both pass the check on stale state. This is service-level transactional protection, not a schema exclusion constraint. The deployed backend remains single-instance.
+
+Bookings also contain `confirmation_email_sent_at` and `cancellation_email_sent_at`. Successful provider calls set them; failures leave them unset. They support best-effort application send suppression, not a durable outbox.
+
+## Deletion and location boundaries
+
+Deleting a listing cascades its bookings as well as images, reviews, favorites, and conversations/messages. Existing bookings are not retained as archival records after deletion. Street addresses are omitted from public listing schemas, but latitude/longitude remain public. There is no separate coordinate-obfuscation store.

@@ -1,4 +1,6 @@
-# Project Plan
+# Historical Project Plan
+
+This is the original planning record, not a current roadmap. The deployed implementation and release scope are documented in README, ARCHITECTURE, and QA_REPORT. Feature development is frozen; unimplemented planning ideas are not current product claims.
 
 ## Goal
 A polished, original Airbnb-style marketplace that an evaluator experiences as unusually
