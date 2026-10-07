@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, ChevronLeft, Lock } from "lucide-react";
-import Image from "next/image";
+import { SafeImage as Image } from "@/components/SafeImage";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";

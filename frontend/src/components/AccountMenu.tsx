@@ -1,7 +1,7 @@
 "use client";
 
 import { Compass, Heart, Home, LayoutDashboard, Luggage, Menu, MessageCircle, UserCircle } from "lucide-react";
-import Image from "next/image";
+import { SafeImage as Image } from "@/components/SafeImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";

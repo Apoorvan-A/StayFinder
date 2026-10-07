@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, MapPin, Navigation } from "lucide-react";
-import Image from "next/image";
+import { SafeImage as Image } from "@/components/SafeImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

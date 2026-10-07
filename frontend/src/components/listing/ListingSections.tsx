@@ -1,7 +1,7 @@
 "use client";
 
 import { Award, CalendarX, Clock, Lock, Shield, Star } from "lucide-react";
-import Image from "next/image";
+import { SafeImage as Image } from "@/components/SafeImage";
 import { useState } from "react";
 import useSWR from "swr";
 

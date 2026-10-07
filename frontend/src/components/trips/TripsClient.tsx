@@ -1,7 +1,7 @@
 "use client";
 
 import { Luggage } from "lucide-react";
-import Image from "next/image";
+import { SafeImage as Image } from "@/components/SafeImage";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
